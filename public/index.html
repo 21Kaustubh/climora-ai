@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Climora AI</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<nav>
+
+<b>CLIMORA AI</b>
+
+<span>Dashboard</span>
+<span>Route History</span>
+<span>Impact</span>
+<span id="account">Login</span>
+
+</nav>
+
+
+
+
+<section class="hero">
+
+
+<div>
+
+<h1>
+Travel Smarter.
+<br>
+Breathe Cleaner.
+</h1>
+
+
+<p>
+AI-powered sustainable navigation with pollution intelligence.
+</p>
+
+
+<button onclick="analyze()">
+Analyze My Route
+</button>
+
+
+</div>
+
+
+
+
+<div 
+class="ai-map"
+id="routeMap">
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+Find Sustainable Route
+</h2>
+
+
+<input 
+id="from"
+placeholder="Starting Point">
+
+
+<input 
+id="to"
+placeholder="Destination">
+
+
+<button onclick="analyze()">
+Find Sustainable Route
+</button>
+
+
+<div id="loading"></div>
+
+
+<div id="result"></div>
+
+
+
+</section>
+
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+Route Comparison
+</h2>
+
+
+<div id="routes">
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+<section class="impact">
+
+
+<h2>
+Environmental Impact
+</h2>
+
+
+
+<div class="stats">
+
+
+<div>
+
+🌫️ Pollution Avoided
+
+<br>
+
+<b id="pollution">
+0%
+</b>
+
+</div>
+
+
+
+
+<div>
+
+🌱 Carbon Saving
+
+<br>
+
+<b id="carbon">
+0 kg
+</b>
+
+
+</div>
+
+
+
+
+<div>
+
+🌍 Sustainability Score
+
+<br>
+
+<b id="score">
+0
+</b>
+
+
+</div>
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+<script src="map.js"></script>
+
+<script src="app.js"></script>
+
+
+</body>
+
+</html>

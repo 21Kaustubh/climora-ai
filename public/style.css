@@ -1,0 +1,710 @@
+/* =========================================
+   CLIMORA AI - COMPLETE STYLE.CSS
+========================================= */
+
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+
+body{
+
+    font-family:Inter,Arial,sans-serif;
+
+    background:
+    radial-gradient(circle at top,#17334d,#06121f 60%);
+
+    color:white;
+
+    min-height:100vh;
+
+}
+
+
+
+/* ================= NAVBAR ================= */
+
+
+nav{
+
+    height:80px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:35px;
+
+    padding:0 45px;
+
+    background:rgba(10,25,42,.85);
+
+    backdrop-filter:blur(15px);
+
+}
+
+
+
+nav b{
+
+    font-size:28px;
+
+    color:#42f58d;
+
+    margin-right:20px;
+
+}
+
+
+
+nav span{
+
+    color:#dbe8f2;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+nav span:hover{
+
+    color:#42f58d;
+
+}
+
+
+
+/* ================= HERO ================= */
+
+
+.hero{
+
+    display:flex;
+
+    justify-content:space-around;
+
+    align-items:center;
+
+    padding:70px 50px;
+
+    gap:50px;
+
+    flex-wrap:wrap;
+
+}
+
+
+
+.hero h1{
+
+    font-size:58px;
+
+    line-height:1.15;
+
+}
+
+
+
+.hero p{
+
+    margin-top:20px;
+
+    font-size:18px;
+
+    color:#cbd8e5;
+
+}
+
+
+
+/* ================= BUTTON ================= */
+
+
+button{
+
+    margin-top:25px;
+
+    padding:15px 28px;
+
+    border:none;
+
+    border-radius:15px;
+
+    background:#42f58d;
+
+    color:#001;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+button:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 10px 30px #42f58d66;
+
+}
+
+
+
+/* ================= MAP CONTAINER ================= */
+
+
+.ai-map,
+#routeMap{
+
+
+    width:450px !important;
+
+    height:300px !important;
+
+
+    display:block !important;
+
+
+    position:relative;
+
+
+    overflow:hidden;
+
+
+    border-radius:30px;
+
+
+    background:
+
+    linear-gradient(
+    145deg,
+    #172f45,
+    #091522
+    );
+
+
+    border:2px solid rgba(66,245,141,.4);
+
+
+    box-shadow:
+
+    0 25px 60px rgba(0,0,0,.5);
+
+
+}
+
+
+
+
+
+
+/* ================= MAP ELEMENTS ================= */
+
+
+.map-start,
+.map-end{
+
+
+    position:absolute;
+
+    width:45px;
+
+    height:45px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-weight:bold;
+
+    z-index:5;
+
+
+}
+
+
+
+.map-start{
+
+    left:35px;
+
+    top:130px;
+
+    background:#42f58d;
+
+    color:#001;
+
+
+}
+
+
+
+.map-end{
+
+
+    right:35px;
+
+    top:130px;
+
+    background:#38a8ff;
+
+
+}
+
+
+
+
+
+
+.route-line{
+
+
+    position:absolute;
+
+    left:80px;
+
+    width:290px;
+
+    height:10px;
+
+    border-radius:20px;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+
+
+.route-line:hover{
+
+    height:15px;
+
+}
+
+
+
+
+
+.fastest{
+
+
+    top:95px;
+
+    background:#ff5757;
+
+    transform:rotate(-10deg);
+
+
+}
+
+
+
+.cleaner{
+
+
+    top:145px;
+
+    background:#42f58d;
+
+
+}
+
+
+
+.detour{
+
+
+    top:195px;
+
+    background:#ffd166;
+
+    transform:rotate(10deg);
+
+
+}
+
+
+
+
+
+.route-line.active{
+
+
+    height:16px;
+
+    box-shadow:
+
+    0 0 25px currentColor;
+
+
+}
+
+
+
+
+
+
+.vehicle{
+
+
+    position:absolute;
+
+
+    top:125px;
+
+
+    left:100px;
+
+
+    font-size:35px;
+
+
+    animation:carMove 5s infinite linear;
+
+
+}
+
+
+
+@keyframes carMove{
+
+
+0%{
+
+left:100px;
+
+}
+
+
+100%{
+
+left:300px;
+
+}
+
+
+}
+
+
+
+
+
+
+.map-label{
+
+
+    position:absolute;
+
+
+    top:20px;
+
+
+    width:100%;
+
+
+    text-align:center;
+
+
+    font-size:18px;
+
+
+    letter-spacing:2px;
+
+
+    color:white;
+
+
+    opacity:.8;
+
+
+}
+
+
+
+
+
+
+
+/* ================= MAIN CARDS ================= */
+
+
+.card,
+.impact{
+
+
+    margin:40px;
+
+
+    padding:35px;
+
+
+    border-radius:30px;
+
+
+    background:
+
+    rgba(255,255,255,.08);
+
+
+    backdrop-filter:blur(20px);
+
+
+    box-shadow:
+
+    0 20px 50px rgba(0,0,0,.4);
+
+
+}
+
+
+
+
+.card h2,
+.impact h2{
+
+
+    font-size:30px;
+
+    margin-bottom:25px;
+
+
+}
+
+
+
+
+input{
+
+
+    width:230px;
+
+    padding:15px;
+
+    margin:10px;
+
+    border-radius:15px;
+
+    border:none;
+
+    outline:none;
+
+
+}
+
+
+
+
+
+
+/* ================= RESULT ================= */
+
+
+#result{
+
+
+    margin-top:30px;
+
+
+    padding:25px;
+
+
+    border-radius:25px;
+
+
+    background:#13283b;
+
+
+    border:1px solid #42f58d;
+
+
+}
+
+
+
+#result h1{
+
+
+    color:#42f58d;
+
+    font-size:42px;
+
+
+}
+
+
+
+
+#loading{
+
+
+    margin-top:20px;
+
+    color:#42f58d;
+
+    font-size:18px;
+
+
+}
+
+
+
+
+
+
+
+/* ================= IMPACT ================= */
+
+
+.stats{
+
+
+    display:flex;
+
+    gap:25px;
+
+    flex-wrap:wrap;
+
+
+}
+
+
+
+.stats div{
+
+
+    background:#13283b;
+
+
+    padding:30px;
+
+
+    min-width:220px;
+
+
+    border-radius:25px;
+
+
+    font-size:18px;
+
+
+}
+
+
+
+
+
+.stats b{
+
+
+    font-size:30px;
+
+    color:#42f58d;
+
+
+}
+
+
+
+
+
+
+/* ================= HISTORY ================= */
+
+
+.history{
+
+
+    margin-bottom:50px;
+
+
+}
+
+
+
+
+
+#score{
+
+
+    margin-top:20px;
+
+    color:#42f58d;
+
+    font-size:22px;
+
+
+}
+
+
+
+
+
+
+/* ================= MOBILE ================= */
+
+
+@media(max-width:800px){
+
+
+.hero h1{
+
+font-size:40px;
+
+}
+
+
+
+.ai-map,
+#routeMap{
+
+width:95%!important;
+
+}
+
+
+
+nav{
+
+padding:20px;
+
+flex-wrap:wrap;
+
+height:auto;
+
+}
+
+
+
+.card,
+.impact{
+
+margin:20px;
+
+}
+
+
+
+input{
+
+width:90%;
+
+}
+
+
+}
