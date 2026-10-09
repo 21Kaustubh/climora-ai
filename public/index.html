@@ -1,203 +1,161 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
-<title>Climora AI</title>
-
-<link rel="stylesheet" href="style.css">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Climora — compare real routes by travel mode, follow GPS directions, and view modeled air quality and weather." />
+  <title>Climora AI | Your Smarter Journey</title>
+  <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="map.js"></script>
+  <script defer src="navigation.js"></script>
+  <script defer src="app.js"></script>
 </head>
-
-
 <body>
-
-
-<nav>
-
-<b>CLIMORA AI</b>
-
-<span>Dashboard</span>
-<span>Route History</span>
-<span>Impact</span>
-<span id="account">Login</span>
-
-</nav>
-
-
-
-
-<section class="hero">
-
-
-<div>
-
-<h1>
-Travel Smarter.
-<br>
-Breathe Cleaner.
-</h1>
-
-
-<p>
-AI-powered sustainable navigation with pollution intelligence.
-</p>
-
-
-<button onclick="analyze()">
-Analyze My Route
-</button>
-
-
-</div>
-
-
-
-
-<div 
-class="ai-map"
-id="routeMap">
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-<section class="card">
-
-
-<h2>
-Find Sustainable Route
-</h2>
-
-
-<input 
-id="from"
-placeholder="Starting Point">
-
-
-<input 
-id="to"
-placeholder="Destination">
-
-
-<button onclick="analyze()">
-Find Sustainable Route
-</button>
-
-
-<div id="loading"></div>
-
-
-<div id="result"></div>
-
-
-
-</section>
-
-
-
-
-
-
-<section class="card">
-
-
-<h2>
-Route Comparison
-</h2>
-
-
-<div id="routes">
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-<section class="impact">
-
-
-<h2>
-Environmental Impact
-</h2>
-
-
-
-<div class="stats">
-
-
-<div>
-
-🌫️ Pollution Avoided
-
-<br>
-
-<b id="pollution">
-0%
-</b>
-
-</div>
-
-
-
-
-<div>
-
-🌱 Carbon Saving
-
-<br>
-
-<b id="carbon">
-0 kg
-</b>
-
-
-</div>
-
-
-
-
-<div>
-
-🌍 Sustainability Score
-
-<br>
-
-<b id="score">
-0
-</b>
-
-
-</div>
-
-
-
-</div>
-
-
-
-</section>
-
-
-
-
-
-<script src="map.js"></script>
-
-<script src="app.js"></script>
-
-
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Climora AI Home"><span class="brand-glyph">✦</span> CLIMORA<span>AI</span></a>
+    <nav class="nav-items" aria-label="Main navigation">
+      <a href="#planner">Plan journey</a>
+      <a href="#comparison">Compare routes</a>
+      <a href="#navigation">GPS navigation</a><a href="#environment">Air & weather</a><a href="#upcoming">Upcoming</a>
+    </nav>
+    <span id="awsStatus" class="service-state">◌ Backend ready to test</span>
+  </header>
+
+  <main>
+    <section id="home" class="hero wrap">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse-dot"></span> SMART ROUTES · EVERYDAY JOURNEYS</div>
+        <h1>Travel smarter.<br /><em>Breathe cleaner.</em></h1>
+        <p>Choose a travel mode, compare real routes, view distance and estimated travel time, and follow GPS-assisted directions. Check modeled air quality and weather for your journey.</p>
+        <a class="primary-cta" href="#planner">Explore real routes <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="hero-visual" aria-hidden="true"><div class="orbital orbit-1"></div><div class="orbital orbit-2"></div><div class="orbital orbit-3"></div><div class="hero-pin">✦</div><span>CLIMORA / ROUTE INTELLIGENCE</span></div>
+    </section>
+
+    <section id="planner" class="wrap planner-section">
+      <div class="section-top">
+        <div><p class="eyebrow">01 / ROUTE PLANNER</p><h2>Where are we going?</h2><p class="section-sub">Search places or pick points on the map. Explore real driving, cycling and walking routes with provider-based distances and estimated times.</p></div>
+        <span class="chip">EVERYDAY ROUTING</span>
+      </div>
+      <div class="quick-trip-row" aria-label="Sample local journeys">
+        <strong>Try a journey</strong>
+        <button type="button" data-preset="bandra-juhu">Bandra → Juhu</button>
+        <button type="button" data-preset="andheri-powai">Andheri → Powai</button>
+        <button type="button" data-preset="dadar-cst">Dadar → CSMT</button>
+      </div>
+      <div class="planner-grid">
+        <aside class="panel control-panel">
+          <form id="routeForm" novalidate>
+            <fieldset class="travel-modes" aria-label="Choose travel mode">
+              <legend>Travel mode</legend>
+              <div class="mode-grid">
+                <label class="mode-option"><input type="radio" name="travelMode" value="car" checked /><span>🚗 Car</span></label>
+                <label class="mode-option"><input type="radio" name="travelMode" value="bicycle" /><span>🚲 Bicycle</span></label>
+                <label class="mode-option"><input type="radio" name="travelMode" value="walking" /><span>🚶 Walking</span></label>
+                <label class="mode-option"><input type="radio" name="travelMode" value="ebike" /><span>⚡ E-bike</span></label>
+              </div>
+              <p id="modeNotice" class="mode-note" role="status">Car: driving-road distances and modeled driving times. No live traffic.</p>
+              <p class="mode-unsupported">Motorcycle and public transport routing need different data providers — not available yet.</p>
+            </fieldset>
+            <div class="location-group">
+              <label for="from">Starting point</label>
+              <div class="search-row"><input id="from" type="text" value="Bandra, Mumbai" autocomplete="off" aria-describedby="fromHint" /><button id="searchFrom" type="button" class="small-button">Search</button></div>
+              <div id="fromHint" class="field-hint">Sample starting point selected</div>
+              <div id="fromResults" class="place-results" aria-label="Starting location matches"></div>
+              <div class="micro-actions"><button id="pickStart" type="button">◎ Pick on map</button><button id="useMyLocation" type="button">⌖ Use my location</button></div>
+            </div>
+            <div class="location-group">
+              <label for="to">Destination</label>
+              <div class="search-row"><input id="to" type="text" value="Juhu, Mumbai" autocomplete="off" aria-describedby="toHint" /><button id="searchTo" type="button" class="small-button">Search</button></div>
+              <div id="toHint" class="field-hint">Sample destination selected</div>
+              <div id="toResults" class="place-results" aria-label="Destination matches"></div>
+              <div class="micro-actions"><button id="pickEnd" type="button">◎ Pick on map</button></div>
+            </div>
+            <div class="limits">
+              <div><label for="extraPercent">Max extra time (%)</label><input id="extraPercent" type="number" min="0" max="100" value="15" /></div>
+              <div><label for="extraMinutes">Max extra (min)</label><input id="extraMinutes" type="number" min="0" max="180" value="25" /></div>
+            </div>
+            <button class="primary-action" id="analyzeBtn" type="submit"><span>✦</span> Calculate routes</button>
+          </form>
+          <div id="loading" class="loading" hidden><span class="spin"></span><span><strong>Calculating journeys</strong><small id="loadingText">Connecting to AWS route engine...</small></span></div>
+          <div id="errorBox" class="error-box" role="alert" hidden></div>
+          <div class="panel-foot"><strong>Provider-based estimates</strong><p>Distance and estimated travel time come from the selected OpenRouteService routing mode. ETA excludes live traffic, stop time and delays. Dedicated long-distance corridor planning is coming later.</p></div>
+        </aside>
+        <section class="panel map-panel" aria-label="Interactive route map">
+          <div class="map-header"><div><strong>Explore the map</strong><p id="mapStatus" role="status">Ready · Click the map to explore</p></div><div class="map-buttons"><button id="showAllBtn" type="button">All routes</button><button id="resetMapBtn" type="button">Fit map</button></div></div>
+          <div id="routeMap" aria-label="OpenStreetMap with selectable routes"></div>
+          <div class="map-legend"><span><i class="legend-dot green"></i> Road choice A</span><span><i class="legend-dot purple"></i> Alternative</span><span><i class="legend-dot amber"></i> Alternative</span><small>Colors distinguish routes; they are not pollution ratings.</small></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="comparison" class="wrap comparison-section">
+      <div class="section-top"><div><p class="eyebrow">02 / ROUTE COMPARISON</p><h2>Choose your route</h2><p class="section-sub">Select a route to view only its line on the map. Click “All routes” to compare again. Routes exceeding your detour limit are clearly marked.</p></div><span class="chip" id="routeCount">0 ROUTES</span></div>
+      <div id="routingNotice" class="routing-notice" hidden></div>
+      <div id="routeCards" class="route-cards"><div class="empty-state">Your real routes will appear here after analysis.</div></div>
+      <div id="routeDetails" class="route-details panel" hidden></div>
+    </section>
+
+    <section id="navigation" class="wrap navigation-section">
+      <div class="section-top">
+        <div><p class="eyebrow">03 / GPS JOURNEY ASSISTANT</p><h2>Turn-by-turn directions</h2>
+          <p class="section-sub">Mode-aware directions, device-reported speed and GPS progress. Foreground testing only; not a certified navigation system.</p></div>
+        <span class="chip">GPS PERMISSION REQUIRED</span>
+      </div>
+      <div class="panel gps-panel">
+        <div class="gps-toolbar">
+          <div><strong id="gpsRouteName">Analyze and select a route first</strong><p id="gpsStatus" role="status">Navigation ready when routes are calculated.</p></div>
+          <div class="gps-actions"><button id="startGpsBtn" type="button" disabled>▶ Start GPS navigation</button><button id="stopGpsBtn" type="button" disabled>■ Stop</button><button id="rerouteBtn" type="button" disabled>↻ Recalculate from GPS</button></div>
+        </div>
+        <div class="gps-stats" aria-label="Driving status">
+          <div><small>Device speed</small><strong id="gpsSpeed">— km/h</strong></div>
+          <div><small>Remaining road distance</small><strong id="gpsRemaining">— km</strong></div>
+          <div><small>Estimated time remaining*</small><strong id="gpsEta">—</strong></div>
+          <div><small>Estimated arrival</small><strong id="gpsArrival">—</strong></div>
+        </div>
+        <div class="next-maneuver"><span>↗ NEXT DIRECTION</span><strong id="nextManeuver">Select a route to see turn instructions.</strong><small id="nextManeuverDistance">No navigation active</small></div>
+        <div id="gpsWarning" class="gps-warning" role="status">Current speed comes from your device GPS when available. No traffic or road speed-limit feed is connected.</div>
+        <details class="all-directions" open><summary>Full route directions</summary><ol id="directionsList"><li>Analyze a route to load directions.</li></ol></details>
+      </div>
+    </section>
+
+    <section id="environment" class="wrap environment-section">
+      <div class="section-top"><div><p class="eyebrow">04 / ENVIRONMENTAL SNAPSHOT</p><h2>Air & weather on your journey</h2><p class="section-sub">Current modeled conditions at your selected start and destination.</p></div><span class="chip">OPEN-METEO DATA</span></div>
+      <div class="environment-grid">
+        <div class="env-card"><div class="env-heading"><span>○ STARTING POINT</span><strong id="startWeatherTitle">Bandra, Mumbai</strong></div><div id="startEnvironment" class="environment-data placeholder-env">Run a route analysis to view modeled conditions.</div></div>
+        <div class="env-card"><div class="env-heading"><span>◇ DESTINATION</span><strong id="endWeatherTitle">Juhu, Mumbai</strong></div><div id="endEnvironment" class="environment-data placeholder-env">Run a route analysis to view modeled conditions.</div></div>
+      </div>
+      <p class="environment-disclaimer">US AQI follows the US index, not India's official AQI. PM2.5 and weather here are model estimates, not sensor readings at street level. These values are not yet used to rank roads.</p>
+    </section>
+
+    <section id="upcoming" class="wrap upcoming-section">
+      <div class="section-top">
+        <div>
+          <p class="eyebrow">05 / ROADMAP</p>
+          <h2>Upcoming features</h2>
+          <p class="section-sub">We are focusing on accurate everyday routing and GPS directions first. These features are planned, not active yet.</p>
+        </div>
+        <span class="chip">COMING SOON</span>
+      </div>
+      <div class="upcoming-grid">
+        <article class="panel upcoming-card">
+          <span class="upcoming-symbol" aria-hidden="true">🛣️</span>
+          <span class="upcoming-status">PLANNED · NOT ACTIVE</span>
+          <h3>Long-distance trip planner</h3>
+          <p>Dedicated multi-city road-trip routes, via-corridors, rest stops and more detailed highway journey planning. The dedicated controls are temporarily removed from the planner.</p>
+        </article>
+        <article class="panel upcoming-card">
+          <span class="upcoming-symbol" aria-hidden="true">📍</span>
+          <span class="upcoming-status">PLANNED · NOT ACTIVE</span>
+          <h3>Nearby Friends</h3>
+          <p>Mutual opt-in location sharing, friend invitations, sharing expiry and optional nearby friend markers. No friend's live location is collected, accessed or displayed today.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">Climora AI · AWS Lambda · OpenRouteService · Leaflet · OpenStreetMap · Open-Meteo <span>Prototype — non-commercial hackathon demo</span></footer>
 </body>
-
 </html>
