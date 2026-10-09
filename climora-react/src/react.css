@@ -1,0 +1,21 @@
+/* React-only additions; original site theme and all motion CSS stay intact. */
+#root { min-height: 100vh; }
+.map-canvas-wrap { position:relative; }
+.google-error-overlay {
+  position:absolute; inset:12% 8%; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:28px; text-align:center; font-size:14px;
+  line-height:1.7; color:#ffd5d5; border:1px solid #ad6464;
+  border-radius:14px; background:rgba(28,37,45,.94); z-index:5;
+}
+.google-error-overlay small {display:block;color:#d7dfec;margin-top:12px;}
+.route-card.route-enter { animation: climora-card-in 520ms var(--motion-ease, ease-out) both; animation-delay:var(--enter-delay,0ms); }
+.route-actions {display:flex;gap:10px;flex-wrap:wrap;margin-top:17px;}
+.route-actions a {display:inline-block;text-decoration:none;background:#203a47;border:1px solid #405a6a;padding:11px 13px;border-radius:10px;font-size:12px;color:#def4f3;}
+.route-actions a:hover { border-color:#75eec0; }
+.directions-preview {margin:19px 0 0;border-top:1px solid #35505f;padding-top:15px;}
+.directions-preview summary {cursor:pointer;font-weight:750;color:#c9f9dc;}
+.directions-preview li {padding:6px 2px;color:#c4d7e1;font-size:12px;}
+.routing-notice {padding:16px 18px;margin:0 0 16px;background:#1f3442;border:1px solid #355667;border-radius:12px;color:#d6e8f2;font-size:12px;line-height:1.6;}
+.route-verification {color:#a9efd1;background:#1a302e;border-color:#346453;}
+@media(max-width:720px) {.map-header {align-items:flex-start;flex-direction:column;} .map-buttons{width:100%;} #routeMap{height:440px;} }
+@media(prefers-reduced-motion:reduce){.route-card.route-enter{animation:none!important;}}
