@@ -1,13 +1,25 @@
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Climora AI — plan real routes, compare travel modes, and explore modeled air quality." />
+    <meta
+      name="description"
+      content="Climora AI — plan real routes, compare travel modes, and explore modeled air quality."
+    />
     <title>Climora AI | Smart Navigation</title>
   </head>
+
   <body>
     <div id="root"></div>
+
+    <!-- Browser compatibility for Amazon Cognito dependencies -->
+    <script>
+      window.global = window;
+    </script>
+
+    <!-- React application -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

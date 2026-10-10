@@ -3,39 +3,20 @@ import GoogleMapPanel from './components/GoogleMapPanel.jsx';
 import GpsPanel from './components/GpsPanel.jsx';
 import EnvironmentCard from './components/EnvironmentCard.jsx';
 import PollutionIntelligence from './components/PollutionIntelligence.jsx';
+import DepartureAdvisor from './components/DepartureAdvisor.jsx';
+import AuthModal from './components/AuthModal.jsx';
+import UserDashboard from './components/UserDashboard.jsx';
+import { restoreSession, signOut } from './auth/cognito.js';
+import { deleteTrip, makeTrip, readTrips, saveTrip } from './auth/trips.js';
+import { SiteHeader, ExperienceHero, CapabilitiesStrip } from './components/ExperienceHero.jsx';
 import { PRESETS, MODE_META, searchPlaces, isCoords, formatCoords, formatMinutes } from './services/places.js';
 import { requestRoutes, googleDirectionsLink, nearbySearchLink } from './services/routing.js';
 import { getEnvironmentalSnapshot } from './services/environment.js';
 import { getRouteAirIntelligence } from './services/routeAir.js';
 
-const PARTICLES = [
-  [8,78,3,6.7,-2],[12,20,2,5.1,-1],[24,12,2,7.8,-5.4],
-  [30,88,3,5.8,-3.7],[45,19,2,6.2,-1.3],[57,73,4,6.9,-4.7],
-  [63,38,2,8.6,-3.5],[72,14,3,5.7,-3.3],[82,82,2,6.8,-1.4],
-  [91,22,3,7,-6.1],[96,64,2,5.3,-3.1],[51,92,2,6.4,-4.1],
-];
 const initialStart = PRESETS['bandra-juhu'][0];
 const initialEnd = PRESETS['bandra-juhu'][1];
 
-function Header({connected}){
-  return <header className="topbar">
-    <a className="brand" href="#home" aria-label="Climora AI home"><span className="brand-glyph">✦</span> CLIMORA<span>AI</span></a>
-    <nav className="nav-items" aria-label="Main navigation">
-      <a href="#planner">Plan journey</a><a href="#comparison">Compare routes</a><a href="#navigation">GPS navigation</a><a href="#environment">Air &amp; weather</a><a href="#upcoming">Upcoming</a>
-    </nav><span className={`service-state ${connected?'connected':''}`}>{connected?'● AWS route engine connected':'◌ Backend ready to test'}</span>
-  </header>;
-}
-function Hero(){
-  return <section id="home" className="hero wrap">
-    <div className="hero-copy"><div className="eyebrow"><span className="pulse-dot"/> SMART ROUTES · EVERYDAY JOURNEYS</div>
-      <h1>Travel smarter.<br/><em>Breathe cleaner.</em></h1>
-      <p>Compare real road routes by travel mode, view provider distance and travel-time estimates, follow GPS directions, and check modeled air quality and weather.</p>
-      <a className="primary-cta" href="#planner">Explore real routes <span aria-hidden="true">↗</span></a>
-    </div>
-    <div className="hero-visual" aria-hidden="true"><div className="orbital orbit-1"/><div className="orbital orbit-2"/><div className="orbital orbit-3"/><div className="hero-pin">✦</div><span>CLIMORA / ROUTE INTELLIGENCE</span></div>
-    {PARTICLES.map(([x,y,size,seconds,delay],i)=><span key={i} className="float-particle" aria-hidden="true" style={{'--px':`${x}%`,'--py':`${y}%`,'--ps':`${size}px`,'--pd':`${seconds}s`,'--delay':`${delay}s`}}/>)}
-  </section>;
-}
 function LocationField({label,fieldId,text,place,onTextChange,onSearch,onSelect,results,searching,onPick,onMyLocation}){
   return <div className="location-group">
     <label htmlFor={fieldId}>{label}</label>
@@ -49,7 +30,7 @@ function LocationField({label,fieldId,text,place,onTextChange,onSearch,onSelect,
       {onMyLocation&&<button type="button" onClick={onMyLocation}>⌖ Use my location</button>}</div>
   </div>;
 }
-function RouteDetails({route,bestId,start,end,mode}){
+function RouteDetails({route,bestId,start,end,mode,onSave,saveMessage}){
   if(!route)return null;
   const fastest=String(route.id)===bestId;
   const within=route.within_time_limit!==false;
@@ -60,9 +41,10 @@ function RouteDetails({route,bestId,start,end,mode}){
       <div><small>Arrival if leaving now</small><strong>{time}</strong></div></div>
     <p className="detail-note"><strong>Road-network checked:</strong> {route.quality_check==='passed'?'Provider route passed snapping and detour checks.':'Provider route; checks not reported.'} Start snap: {Number.isFinite(route.start_snap_m)?`${Math.round(route.start_snap_m)} m`:'not provided'}; destination snap: {Number.isFinite(route.end_snap_m)?`${Math.round(route.end_snap_m)} m`:'not provided'}.</p>
     <p className="detail-note">{fastest?'Fastest returned route estimate.':'Alternative road/path option.'} {within?'Within your selected detour limit.':'Long detour, exceeds your selected limit.'} Distances and duration come from the OpenRouteService {MODE_META[mode]?.label} profile. No live traffic or stops included. Modeled air screening, when available, is shown in the comparison section.</p>
-    <div className="route-actions"><a href={googleDirectionsLink(start.coords,end.coords,mode)} target="_blank" rel="noopener noreferrer">↗ Open journey in Google Maps</a>
+    <div className="route-actions"><button type="button" className="save-journey-action" onClick={onSave}>☆ Save this journey</button><a href={googleDirectionsLink(start.coords,end.coords,mode)} target="_blank" rel="noopener noreferrer">↗ Open journey in Google Maps</a>
       <a href={nearbySearchLink('restaurants and snacks',end.name)} target="_blank" rel="noopener noreferrer">☕ Food near destination</a>
       <a href={nearbySearchLink('hotels and stays',end.name)} target="_blank" rel="noopener noreferrer">🛏 Stays near destination</a></div>
+    {saveMessage&&<p className="trip-save-status" role="status">{saveMessage}</p>}
     {!!route.directions_preview?.length&&<details className="directions-preview"><summary>Preview road directions (first {Math.min(16,route.directions_preview.length)} steps)</summary><ol>{route.directions_preview.slice(0,16).map((step,i)=><li key={i}>{step.instruction} <small>({Number(step.distance_km||0).toFixed(2)} km)</small></li>)}</ol></details>}
     <p className="detail-note">Google Maps may calculate a different route/ETA. Food and stays are searches, not reservations.</p>
   </div>;
@@ -89,18 +71,54 @@ export default function App(){
   const [routeAirLoading,setRouteAirLoading]=useState(false);
   const [routeAirError,setRouteAirError]=useState('');
   const [connected,setConnected]=useState(false);
+  const [profile,setProfile]=useState(null);
+  const [authOpen,setAuthOpen]=useState(false);
+  const [dashboardOpen,setDashboardOpen]=useState(false);
+  const [trips,setTrips]=useState([]);
+  const [saveMessage,setSaveMessage]=useState('');
   const requestSeq=useRef(0);
   const requestController=useRef(null);
   const searchesRef=useRef({start:0,end:0});
   const mapRef=useRef(null);
+
+  useEffect(()=>{
+    let active=true;
+    void restoreSession().then(account=>{if(active)setProfile(account);}).catch(()=>{});
+    return()=>{active=false;};
+  },[]);
+  useEffect(()=>setTrips(readTrips(profile)),[profile]);
+
+  const saveCurrentTrip=useCallback(()=>{
+    if(!analysis)return;
+    const selectedRoute=analysis.routes.find(r=>String(r.id)===String(selectedId||analysis.bestId));
+    if(!selectedRoute)return;
+    try {
+      const trip=makeTrip(analysis.start,analysis.end,analysis.mode,selectedRoute);
+      setTrips(saveTrip(profile,trip));
+      setSaveMessage('Journey saved on this device. Open My trips to plan it again.');
+    }catch(err){setSaveMessage(err.message||'Could not save this journey.');}
+  },[analysis,selectedId,profile]);
+  const removeSavedTrip=useCallback(id=>setTrips(deleteTrip(profile,id)),[profile]);
+  const logout=useCallback(()=>{
+    signOut();setProfile(null);setDashboardOpen(false);setSaveMessage('');
+  },[]);
 
   const invalidate=useCallback(()=>{
     ++requestSeq.current;
     requestController.current?.abort();
     setAnalysis(null);setSelectedId(null);setLoading(false);
     setEnv({start:null,end:null});setEnvLoading(false);
-    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setError('');
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setError('');setSaveMessage('');
   },[]);
+
+  const planSavedTrip=useCallback(trip=>{
+    invalidate();
+    setStart(trip.start);setEnd(trip.end);
+    setStartText(trip.start.name);setEndText(trip.end.name);setMode(trip.mode);
+    setStartResults([]);setEndResults([]);
+    setDashboardOpen(false);
+    document.getElementById('planner')?.scrollIntoView({behavior:'smooth'});
+  },[invalidate]);
 
   const pickPlace=useCallback((kind,place)=>{
     invalidate();
@@ -152,7 +170,7 @@ export default function App(){
     requestController.current?.abort();
     const controller=new AbortController();requestController.current=controller;
     setLoading(true);setAnalysis(null);setSelectedId(null);setEnv({start:null,end:null});setEnvLoading(false);
-    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setSaveMessage('');
     try{
       const result=await requestRoutes({start:startLocation.coords,end:end.coords,travelMode:mode,maxExtraPercent:percent,maxExtraMinutes:minutes},controller.signal);
       if(seq!==requestSeq.current)return;
@@ -194,17 +212,27 @@ export default function App(){
     void calculate(place);
   },[pickPlace,calculate]);
 
+  useEffect(()=>{
+    if (typeof IntersectionObserver === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const targets = Array.from(document.querySelectorAll('[data-reveal]'));
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if(entry.isIntersecting){entry.target.classList.add('cx-is-visible');observer.unobserve(entry.target);}
+    }), {threshold:0.05,rootMargin:'0px 0px -36px 0px'});
+    targets.forEach(target=>observer.observe(target));
+    document.documentElement.classList.add('cx-motion-enabled');
+    return ()=>{observer.disconnect();document.documentElement.classList.remove('cx-motion-enabled');};
+  },[]);
   useEffect(()=>()=>{requestController.current?.abort();},[]);
   const visibleRoute=analysis?.routes.find(r=>String(r.id)===String(selectedId||analysis.bestId))||null;
   const detailsRoute=visibleRoute;
   const activeMode=analysis?.mode||mode;
   return <>
-    <Header connected={connected}/><main><Hero/>
-      <section id="planner" className="wrap planner-section">
-        <div className="section-top"><div><p className="eyebrow">01 / ROUTE PLANNER</p><h2>Where are we going?</h2><p className="section-sub">Explore mapped roads across Maharashtra. Search a town, select a real location, or pin precise road start/end points. Distances are provider-measured, not straight-line guesses.</p></div><span className="chip">EVERYDAY ROUTING</span></div>
-        <div className="quick-trip-row" aria-label="Sample local journeys"><strong>Test local journeys</strong>{Object.keys(PRESETS).map(key=><button key={key} type="button" onClick={()=>preset(key)}>{key==='bandra-juhu'?'Bandra → Juhu':key==='andheri-powai'?'Andheri → Powai':'Dadar → CSMT'}</button>)}</div>
+    <SiteHeader connected={connected} profile={profile} onOpenAuth={()=>setAuthOpen(true)} onOpenDashboard={()=>setDashboardOpen(true)}/><main><ExperienceHero/><CapabilitiesStrip/>
+      <section id="planner" className="wrap planner-section cx-section" data-reveal="">
+        <div className="section-top"><div><p className="eyebrow">01 <span className="cx-eyebrow-slash">/</span> YOUR JOURNEY, REIMAGINED</p><h2>Where will life take you <em>today?</em></h2><p className="section-sub">Explore mapped roads across Maharashtra. Search a town, select a real location, or pin precise road start/end points. Distances are provider-measured, not straight-line guesses.</p></div><span className="chip cx-section-chip">◉ &nbsp; PERSONAL ROUTE STUDIO</span></div>
+        <div className="quick-trip-row" aria-label="Sample local journeys"><strong>QUICK START &nbsp; ↗</strong>{Object.keys(PRESETS).map(key=><button key={key} type="button" onClick={()=>preset(key)}>{key==='bandra-juhu'?'Bandra → Juhu':key==='andheri-powai'?'Andheri → Powai':'Dadar → CSMT'}</button>)}</div>
         <div className="planner-grid">
-          <aside className="panel control-panel"><form noValidate onSubmit={e=>{e.preventDefault();void calculate();}}>
+          <aside className="panel control-panel"><div className="cx-control-heading"><span className="cx-form-symbol">⌖</span><div><h3>Craft your journey</h3><p>Choose how you want to explore</p></div><span className="cx-form-live" aria-label="Real routing available"/></div><form noValidate onSubmit={e=>{e.preventDefault();void calculate();}}>
             <fieldset className="travel-modes"><legend>Travel mode</legend><div className="mode-grid">
               {Object.entries(MODE_META).map(([id,item])=><label className="mode-option" key={id}><input type="radio" name="travelMode" value={id} checked={mode===id} onChange={()=>{setMode(id);invalidate();}}/><span>{item.emoji} {item.label}</span></label>)}
             </div><p className="mode-note" role="status">{MODE_META[mode].notice}</p><p className="mode-unsupported">Motorcycle and public transport need different routing providers — not available yet.</p></fieldset>
@@ -221,8 +249,8 @@ export default function App(){
           <GoogleMapPanel start={start} end={end} analysis={analysis} mapRef={mapRef} onError={setError} onPick={(kind,coords)=>pickPlace(kind,{name:`Pinned location (${coords[1].toFixed(4)}, ${coords[0].toFixed(4)})`,coords})} onSelect={setSelectedId}/>
         </div>
       </section>
-      <section id="comparison" className="wrap comparison-section">
-        <div className="section-top"><div><p className="eyebrow">02 / ROUTE COMPARISON</p><h2>Choose your route</h2><p className="section-sub">Select one route to view its line on Google Maps. Choose “All routes” to compare. Routes above the detour limit are marked.</p></div><span className="chip">{analysis?.routes.length||0} ROUTE(S)</span></div>
+      <section id="comparison" className="wrap comparison-section cx-section" data-reveal="">
+        <div className="section-top"><div><p className="eyebrow">02 <span className="cx-eyebrow-slash">/</span> INTELLIGENT ROUTE OPTIONS</p><h2>Every route tells <em>a story.</em></h2><p className="section-sub">Select one route to view its line on Google Maps. Choose “All routes” to compare. Routes above the detour limit are marked.</p></div><span className="chip cx-section-chip">{analysis?.routes.length||0} ROUTE OPTION(S)</span></div>
         {analysis&&<><div className="routing-notice">{MODE_META[analysis.mode].label} mode · Provider road distance (not straight-line) and estimated travel time. {analysis.body.maximum_allowed_minutes?`Time limit: ${formatMinutes(analysis.body.maximum_allowed_minutes)}. `:''}No live traffic or stops included.</div>
           <div className="routing-notice route-verification" role="status">{analysis.body.route_quality?.status==='passed'?`✓ Route checks passed: snapping, endpoints and detour sanity. ${analysis.body.route_quality.hidden_anomalies||0} suspect route(s) hidden.`:'Route verification metadata unavailable: check whether the latest AWS Lambda is deployed.'}</div></>}
         <div className="route-cards">{!analysis?.routes.length?<div className="empty-state">{loading?'Requesting roads from AWS Lambda…':'Calculate a journey to compare verified road routes. No fake kilometres are shown.'}</div>:
@@ -236,17 +264,20 @@ export default function App(){
           })}
         </div>
         <PollutionIntelligence analysis={analysis} result={routeAir} loading={routeAirLoading} error={routeAirError} selectedId={selectedId||analysis?.bestId} onSelect={id=>mapRef.current?.selectRoute(id)}/>
-        {analysis&&<RouteDetails route={detailsRoute} bestId={analysis.bestId} start={analysis.start} end={analysis.end} mode={activeMode}/>}
+        {analysis&&<RouteDetails route={detailsRoute} bestId={analysis.bestId} start={analysis.start} end={analysis.end} mode={activeMode} onSave={saveCurrentTrip} saveMessage={saveMessage}/>}
       </section>
       <GpsPanel route={visibleRoute} mode={activeMode} mapRef={mapRef} onReroute={handleReroute}/>
-      <section id="environment" className="wrap environment-section"><div className="section-top"><div><p className="eyebrow">04 / ENVIRONMENTAL SNAPSHOT</p><h2>Air &amp; weather on your journey</h2><p className="section-sub">Current modeled environmental conditions at your selected start and destination.</p></div><span className="chip">OPEN-METEO DATA</span></div>
+      <DepartureAdvisor route={visibleRoute} mode={MODE_META[activeMode]?.label} routeStart={analysis?.start.name} routeEnd={analysis?.end.name}/>
+      <section id="environment" className="wrap environment-section cx-section" data-reveal=""><div className="section-top"><div><p className="eyebrow">05 <span className="cx-eyebrow-slash">/</span> UNDERSTAND THE ATMOSPHERE</p><h2>Know the air <em>ahead.</em></h2><p className="section-sub">Current modeled environmental conditions at your selected start and destination.</p></div><span className="chip cx-section-chip">✦ &nbsp; MODELED CLIMATE DATA</span></div>
         <div className="environment-grid"><EnvironmentCard label="○ STARTING POINT" name={analysis?.start.name||start.name} result={env.start} loading={envLoading} attempted={Boolean(analysis)}/><EnvironmentCard label="◇ DESTINATION" name={analysis?.end.name||end.name} result={env.end} loading={envLoading} attempted={Boolean(analysis)}/></div>
         <p className="environment-disclaimer">US AQI uses the US scale (not India's official AQI). PM2.5, AQI and weather are modeled location-level data, not street-level sensors. Climora samples these coarse forecasts along routes for informational screening, but cannot guarantee a cleaner street.</p>
       </section>
-      <section id="upcoming" className="wrap upcoming-section"><div className="section-top"><div><p className="eyebrow">05 / ROADMAP</p><h2>Upcoming features</h2><p className="section-sub">Everyday routing first; these features are planned, not active.</p></div><span className="chip">COMING SOON</span></div>
+      <section id="upcoming" className="wrap upcoming-section cx-section" data-reveal=""><div className="section-top"><div><p className="eyebrow">06 <span className="cx-eyebrow-slash">/</span> THE JOURNEY CONTINUES</p><h2>What lies <em>ahead.</em></h2><p className="section-sub">Everyday routing first; these features are planned, not active.</p></div><span className="chip cx-section-chip">✧ &nbsp; COMING SOON</span></div>
         <div className="upcoming-grid"><article className="panel upcoming-card"><span className="upcoming-symbol" aria-hidden="true">🛣️</span><span className="upcoming-status">PLANNED · NOT ACTIVE</span><h3>Long-distance trip planner</h3><p>Dedicated multi-city trips, via-corridors and detailed highway stops. Regular routes remain available where supported.</p></article>
           <article className="panel upcoming-card"><span className="upcoming-symbol" aria-hidden="true">📍</span><span className="upcoming-status">PLANNED · NOT ACTIVE</span><h3>Nearby Friends</h3><p>Mutual opt-in location sharing, invitations and expiry. No friend's location is currently collected or shown.</p></article></div>
       </section>
     </main><footer className="footer">Climora AI · React · Vite · AWS Lambda · OpenRouteService · Google Maps · Open-Meteo <span>Non-commercial hackathon prototype</span></footer>
+    <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuthenticated={account=>{setProfile(account);setDashboardOpen(true);}}/>
+    {dashboardOpen&&<UserDashboard profile={profile} trips={trips} onClose={()=>setDashboardOpen(false)} onSignIn={()=>{setDashboardOpen(false);setAuthOpen(true);}} onSignOut={logout} onRemoveTrip={removeSavedTrip} onUseTrip={planSavedTrip}/>}
   </>;
 }

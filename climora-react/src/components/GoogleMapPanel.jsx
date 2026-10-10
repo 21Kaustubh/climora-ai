@@ -36,18 +36,22 @@ export default function GoogleMapPanel({start,end,analysis,mapRef,onSelect,onPic
     else mapRef.current?.clearRoutes();
   },[analysis,mapRef]);
 
-  return <section className="panel map-panel" aria-label="Interactive road map">
-    <div className="map-header"><div><strong>Explore on Google Maps</strong><p role="status">{mapStatus}</p></div>
-      <div className="map-buttons">
-        <button type="button" aria-pressed={satellite} onClick={()=>setSatellite(mapRef.current?.toggleSatellite()||false)}>{satellite?'Road map':'Satellite'}</button>
-        <button type="button" aria-pressed={traffic} onClick={()=>setTraffic(mapRef.current?.toggleTraffic()||false)}>{traffic?'Hide traffic':'Show traffic'}</button>
-        <button type="button" onClick={()=>mapRef.current?.showAllRoutes()}>All routes</button>
-        <button type="button" onClick={()=>mapRef.current?.fitMap()}>Fit map</button>
+  return <section className="panel map-panel cx-map-panel" aria-label="Interactive road map">
+    <div className="map-header">
+      <div className="cx-map-heading"><span className="cx-map-heading-icon" aria-hidden="true">⌖</span>
+        <div><small>YOUR INTERACTIVE CANVAS</small><strong>Explore on Google Maps</strong><p role="status">{mapStatus}</p></div>
+      </div>
+      <div className="map-buttons" aria-label="Map controls">
+        <button type="button" aria-pressed={satellite} onClick={()=>setSatellite(mapRef.current?.toggleSatellite()||false)}>{satellite?'▤  Road map':'▧  Satellite'}</button>
+        <button type="button" aria-pressed={traffic} onClick={()=>setTraffic(mapRef.current?.toggleTraffic()||false)}>{traffic?'◉  Hide traffic':'◌  Traffic'}</button>
+        <button type="button" onClick={()=>mapRef.current?.showAllRoutes()}>≋  All routes</button>
+        <button type="button" onClick={()=>mapRef.current?.fitMap()}>⛶  Fit map</button>
       </div>
     </div>
-    <div className="map-canvas-wrap"><div id="routeMap" ref={host} aria-label="Google Maps showing selectable provider road routes"/>
+    <div className="map-canvas-wrap">
+      <div id="routeMap" ref={host} aria-label="Google Maps showing selectable provider road routes" />
       {mapError&&<div className="google-error-overlay" role="alert">{mapError}<small>Use .env.local to configure the API key, then restart Vite.</small></div>}
     </div>
-    <div className="map-legend"><span><i className="legend-dot green"/> Road choice A</span><span><i className="legend-dot purple"/> Alternative</span><span><i className="legend-dot amber"/> Alternative</span><small>Colors distinguish routes, not pollution. Traffic overlay is visual only and does not change AWS route ETAs.</small></div>
+    <div className="map-legend"><span className="cx-map-legend-label">MAP KEY</span><span><i className="legend-dot green"/> Primary route</span><span><i className="legend-dot purple"/> Alternative</span><span><i className="legend-dot amber"/> Alternative</span><small>Route colors are visual labels, not air-quality rankings. Traffic overlay does not alter provider ETA.</small></div>
   </section>;
 }
