@@ -19,3 +19,38 @@
 .route-verification {color:#a9efd1;background:#1a302e;border-color:#346453;}
 @media(max-width:720px) {.map-header {align-items:flex-start;flex-direction:column;} .map-buttons{width:100%;} #routeMap{height:440px;} }
 @media(prefers-reduced-motion:reduce){.route-card.route-enter{animation:none!important;}}
+
+/* Phase 5: honest model-based route air screening */
+.air-intelligence {margin: 19px 0 2px; padding: 26px; border: 1px solid rgba(105,222,190,.24);}
+.air-intelligence-header {display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 21px;}
+.air-intelligence-header h3 {font-size: 23px; margin: 0 0 8px; letter-spacing: -.4px;}
+.air-intelligence-header p:not(.eyebrow) {font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0;}
+.air-intelligence-label {flex-shrink:0; color: #edd3a5; border:1px solid #756145; background:#382f26; font-size:10px; font-weight:800; padding:8px 10px; border-radius:999px; letter-spacing:.6px;}
+.air-status {color:#b5d0dc; background:#102735; border:1px dashed #486173; border-radius:12px; display:flex; align-items:center; gap:12px; padding:19px; line-height:1.6; font-size:13px;}
+.air-spinner {width:21px;height:21px; flex-shrink:0;}
+.air-failure {color:#f3bbac; border-color:#845455; background:#39262b;}
+.air-decision {display:flex; align-items:flex-start; gap:13px; background:#182f3d; border:1px solid #405767; border-radius:14px; padding:18px; margin-bottom:17px;}
+.air-decision.air-has-candidate {background:#16382f;border-color:#508f72;}
+.air-decision-icon {display:grid;place-items:center;flex-shrink:0;width:39px;height:39px;font-size:24px;font-weight:800;background:#234956;color:#bcf8e5;border-radius:50%;}
+.air-decision strong {font-size:15px; color:#e2f8ef;}
+.air-decision p {font-size:12px;color:#adcbd6;line-height:1.6;margin:7px 0 0;}
+.air-route-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;}
+.air-route-card {min-width:0;display:block;text-align:left;color:#e7f1f7;background:#122837;border:1px solid #304d5d;border-radius:13px;padding:17px;transition:border-color .16s,transform .16s,background .16s;}
+.air-route-card:hover,.air-route-card.air-active {border-color:#6be5b5;background:#1c3b46;transform:translateY(-2px);}
+.air-route-top {display:flex; justify-content:space-between; flex-wrap:wrap;gap:7px;margin-bottom:16px;min-height:24px;}
+.air-route-top strong {font-size:13px;}
+.air-route-top em {font-style:normal;font-size:9px;font-weight:900;letter-spacing:.2px;color:#94f6ba;}
+.air-metric-row {display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:11px 0;}
+.air-metric-row span {font-size:11px; color:#abbece;}
+.air-metric-row b {font-size:17px;white-space:nowrap;}
+.air-metric-row small {font-size:10px;font-weight:400;color:#c5d9e4;}
+.air-route-card>small {display:block; color:#84a5b7;font-size:10px;line-height:1.6;margin-top:13px;}
+.air-unavailable {display:block;font-size:12px;color:#dcbfa3;line-height:1.6;}
+.air-method,.air-credit {font-size:11px;line-height:1.7;color:#9bb3c1;margin:17px 0 0;}
+.air-method strong {color:#e3edf3;}
+.air-credit {margin-top:7px;}
+.air-credit a {color:#9deacb;text-underline-offset:3px;}
+.route-card .route-tag.air-tag {color:#a8efc7;background:#234c45;}
+@media(max-width:1000px){.air-route-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:650px){.air-intelligence{padding:17px;}.air-route-grid{grid-template-columns:1fr;}.air-intelligence-header{flex-direction:column;}.air-intelligence-header h3{font-size:20px;}}
+@media(prefers-reduced-motion: reduce){.air-route-card{transition:none!important;}.air-route-card:hover{transform:none;}}

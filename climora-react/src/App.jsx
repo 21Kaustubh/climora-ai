@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import GoogleMapPanel from './components/GoogleMapPanel.jsx';
 import GpsPanel from './components/GpsPanel.jsx';
 import EnvironmentCard from './components/EnvironmentCard.jsx';
+import PollutionIntelligence from './components/PollutionIntelligence.jsx';
 import { PRESETS, MODE_META, searchPlaces, isCoords, formatCoords, formatMinutes } from './services/places.js';
 import { requestRoutes, googleDirectionsLink, nearbySearchLink } from './services/routing.js';
 import { getEnvironmentalSnapshot } from './services/environment.js';
+import { getRouteAirIntelligence } from './services/routeAir.js';
 
 const PARTICLES = [
   [8,78,3,6.7,-2],[12,20,2,5.1,-1],[24,12,2,7.8,-5.4],
@@ -57,7 +59,7 @@ function RouteDetails({route,bestId,start,end,mode}){
       <div><small>Road distance</small><strong>{Number(route.distance_km).toFixed(2)} km</strong></div>
       <div><small>Arrival if leaving now</small><strong>{time}</strong></div></div>
     <p className="detail-note"><strong>Road-network checked:</strong> {route.quality_check==='passed'?'Provider route passed snapping and detour checks.':'Provider route; checks not reported.'} Start snap: {Number.isFinite(route.start_snap_m)?`${Math.round(route.start_snap_m)} m`:'not provided'}; destination snap: {Number.isFinite(route.end_snap_m)?`${Math.round(route.end_snap_m)} m`:'not provided'}.</p>
-    <p className="detail-note">{fastest?'Fastest returned route estimate.':'Alternative road/path option.'} {within?'Within your selected detour limit.':'Long detour, exceeds your selected limit.'} Distances and duration come from the OpenRouteService {MODE_META[mode]?.label} profile. No live traffic, stops or route-specific pollution scoring yet.</p>
+    <p className="detail-note">{fastest?'Fastest returned route estimate.':'Alternative road/path option.'} {within?'Within your selected detour limit.':'Long detour, exceeds your selected limit.'} Distances and duration come from the OpenRouteService {MODE_META[mode]?.label} profile. No live traffic or stops included. Modeled air screening, when available, is shown in the comparison section.</p>
     <div className="route-actions"><a href={googleDirectionsLink(start.coords,end.coords,mode)} target="_blank" rel="noopener noreferrer">↗ Open journey in Google Maps</a>
       <a href={nearbySearchLink('restaurants and snacks',end.name)} target="_blank" rel="noopener noreferrer">☕ Food near destination</a>
       <a href={nearbySearchLink('hotels and stays',end.name)} target="_blank" rel="noopener noreferrer">🛏 Stays near destination</a></div>
@@ -83,6 +85,9 @@ export default function App(){
   const [error,setError]=useState('');
   const [env,setEnv]=useState({start:null,end:null});
   const [envLoading,setEnvLoading]=useState(false);
+  const [routeAir,setRouteAir]=useState(null);
+  const [routeAirLoading,setRouteAirLoading]=useState(false);
+  const [routeAirError,setRouteAirError]=useState('');
   const [connected,setConnected]=useState(false);
   const requestSeq=useRef(0);
   const requestController=useRef(null);
@@ -93,7 +98,8 @@ export default function App(){
     ++requestSeq.current;
     requestController.current?.abort();
     setAnalysis(null);setSelectedId(null);setLoading(false);
-    setEnv({start:null,end:null});setEnvLoading(false);setError('');
+    setEnv({start:null,end:null});setEnvLoading(false);
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setError('');
   },[]);
 
   const pickPlace=useCallback((kind,place)=>{
@@ -146,6 +152,7 @@ export default function App(){
     requestController.current?.abort();
     const controller=new AbortController();requestController.current=controller;
     setLoading(true);setAnalysis(null);setSelectedId(null);setEnv({start:null,end:null});setEnvLoading(false);
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');
     try{
       const result=await requestRoutes({start:startLocation.coords,end:end.coords,travelMode:mode,maxExtraPercent:percent,maxExtraMinutes:minutes},controller.signal);
       if(seq!==requestSeq.current)return;
@@ -153,7 +160,14 @@ export default function App(){
       setConnected(true);
       setLoading(false);
       setEnvLoading(true);
+      setRouteAirLoading(true);
       document.getElementById('comparison')?.scrollIntoView({behavior:'smooth',block:'start'});
+      // Route screening is optional: do not block or alter the existing
+      // endpoint AQI/weather dashboard or any AWS routing results.
+      void getRouteAirIntelligence(result.routes, result.bestId,controller.signal)
+        .then(data=>{if(seq===requestSeq.current)setRouteAir(data);})
+        .catch(err=>{if(seq===requestSeq.current&&err.name!=='AbortError')setRouteAirError(err.message||'Forecast service unreachable');})
+        .finally(()=>{if(seq===requestSeq.current)setRouteAirLoading(false);});
       const [a,b]=await Promise.allSettled([
         getEnvironmentalSnapshot(startLocation.coords,controller.signal),
         getEnvironmentalSnapshot(end.coords,controller.signal),
@@ -217,16 +231,17 @@ export default function App(){
             const color=mapRef.current?.getRouteColor(id)||['#36dea2','#a990fa','#f2ad57','#5db8fa','#ff819d'][i%5];
             return <button className={`route-card route-enter ${isSelected?'selected':''}`} style={{'--route-color':color,'--enter-delay':`${i*85}ms`}} type="button" key={id} onClick={()=>mapRef.current?.selectRoute(id)}>
               <span className="route-name"><i/>{r.name}</span><span className="route-time">{formatMinutes(r.duration_minutes)}</span><span className="route-distance">{Number(r.distance_km).toFixed(2)} km</span>
-              <span className="route-tag">{isBest?'FASTEST':r.route_preference==='shortest'?'SHORTEST':'ALTERNATIVE'}</span>{r.within_time_limit===false&&<span className="route-tag late">LONG DETOUR</span>}{isSelected&&<span className="route-tag">SELECTED</span>}
+              <span className="route-tag">{isBest?'FASTEST':r.route_preference==='shortest'?'SHORTEST':'ALTERNATIVE'}</span>{routeAir?.recommendationId===id&&<span className="route-tag air-tag">LOWER MODELED PROXY</span>}{r.within_time_limit===false&&<span className="route-tag late">LONG DETOUR</span>}{isSelected&&<span className="route-tag">SELECTED</span>}
             </button>;
           })}
         </div>
+        <PollutionIntelligence analysis={analysis} result={routeAir} loading={routeAirLoading} error={routeAirError} selectedId={selectedId||analysis?.bestId} onSelect={id=>mapRef.current?.selectRoute(id)}/>
         {analysis&&<RouteDetails route={detailsRoute} bestId={analysis.bestId} start={analysis.start} end={analysis.end} mode={activeMode}/>}
       </section>
       <GpsPanel route={visibleRoute} mode={activeMode} mapRef={mapRef} onReroute={handleReroute}/>
       <section id="environment" className="wrap environment-section"><div className="section-top"><div><p className="eyebrow">04 / ENVIRONMENTAL SNAPSHOT</p><h2>Air &amp; weather on your journey</h2><p className="section-sub">Current modeled environmental conditions at your selected start and destination.</p></div><span className="chip">OPEN-METEO DATA</span></div>
         <div className="environment-grid"><EnvironmentCard label="○ STARTING POINT" name={analysis?.start.name||start.name} result={env.start} loading={envLoading} attempted={Boolean(analysis)}/><EnvironmentCard label="◇ DESTINATION" name={analysis?.end.name||end.name} result={env.end} loading={envLoading} attempted={Boolean(analysis)}/></div>
-        <p className="environment-disclaimer">US AQI uses the US scale (not India's official AQI). PM2.5, AQI and weather are modeled location-level data, not street-level sensors. Climora does not yet use these to rank roads.</p>
+        <p className="environment-disclaimer">US AQI uses the US scale (not India's official AQI). PM2.5, AQI and weather are modeled location-level data, not street-level sensors. Climora samples these coarse forecasts along routes for informational screening, but cannot guarantee a cleaner street.</p>
       </section>
       <section id="upcoming" className="wrap upcoming-section"><div className="section-top"><div><p className="eyebrow">05 / ROADMAP</p><h2>Upcoming features</h2><p className="section-sub">Everyday routing first; these features are planned, not active.</p></div><span className="chip">COMING SOON</span></div>
         <div className="upcoming-grid"><article className="panel upcoming-card"><span className="upcoming-symbol" aria-hidden="true">🛣️</span><span className="upcoming-status">PLANNED · NOT ACTIVE</span><h3>Long-distance trip planner</h3><p>Dedicated multi-city trips, via-corridors and detailed highway stops. Regular routes remain available where supported.</p></article>

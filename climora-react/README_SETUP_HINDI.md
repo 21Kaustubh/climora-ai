@@ -1,3 +1,5 @@
+> **PHASE 5 UPDATE:** For route-wise pollution screening, see `README_PHASE5_HINDI.md`. This older document covers the base React/Vite migration.
+
 # Climora AI — React.js + Vite Migration
 
 This is a **real React migration** of the existing Climora AI frontend. It replaces the old direct-DOM `index.html` + `app.js` app with React components/hooks. The AWS Lambda route engine is **not changed**.
