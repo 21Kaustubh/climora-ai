@@ -12,7 +12,7 @@ const TITLES = {
   resetConfirm: ['Choose a new password', 'Use the code from your email to recover your account.'],
 };
 
-export default function AuthModal({ open, onClose, onAuthenticated }) {
+export default function AuthModal({ open, onClose, onContinueGuest = onClose, onAuthenticated }) {
   const [step, setStep] = useState('signin');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -78,7 +78,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }) {
       <p id="account-desc">{TITLES[step][1]}</p>
       {!authConfigured ? <div className="account-not-setup" role="status">
         <strong>Accounts are not configured yet.</strong><p>Guest mode is fully functional. To enable real sign-in, create a Cognito User Pool and add its ID and public app-client ID to <code>.env.local</code>. See <code>README_AUTH_SETUP_HINDI.md</code>.</p>
-        <button type="button" className="account-primary" onClick={onClose}>Continue as guest →</button>
+        <button type="button" className="account-primary" onClick={onContinueGuest}>Continue as guest →</button>
       </div> : <>
         {['signin','signup'].includes(step)&&<div className="account-tabs" role="group" aria-label="Choose account action"><button className={step==='signin'?'active':''} onClick={()=>switchStep('signin')} type="button">Sign in</button><button className={step==='signup'?'active':''} onClick={()=>switchStep('signup')} type="button">Create account</button></div>}
         <form onSubmit={submit} className="account-form">
@@ -97,7 +97,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }) {
           {step==='confirm'&&<button type="button" disabled={busy} onClick={()=>void run(async()=>{await resendCode(email);setMessage('A new code has been sent.');})}>Resend code</button>}
           {!['signin','signup'].includes(step)&&<button type="button" onClick={()=>switchStep('signin')}>Back to sign in</button>}
         </div>
-        <div className="account-guest"><span>Just exploring?</span><button onClick={onClose} type="button">Continue without account ↗</button></div>
+        <div className="account-guest"><span>Just exploring?</span><button onClick={onContinueGuest} type="button">Continue without account ↗</button></div>
       </>}
       <p className="account-fineprint">Accounts run on AWS Cognito when configured. Your saved trips in this version stay on this device, not synchronized to the cloud.</p>
     </section>

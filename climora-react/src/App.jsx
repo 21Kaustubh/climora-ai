@@ -6,6 +6,7 @@ import PollutionIntelligence from './components/PollutionIntelligence.jsx';
 import DepartureAdvisor from './components/DepartureAdvisor.jsx';
 import AuthModal from './components/AuthModal.jsx';
 import UserDashboard from './components/UserDashboard.jsx';
+import EntryGate from './components/EntryGate.jsx';
 import { restoreSession, signOut } from './auth/cognito.js';
 import { deleteTrip, makeTrip, readTrips, saveTrip } from './auth/trips.js';
 import { SiteHeader, ExperienceHero, CapabilitiesStrip } from './components/ExperienceHero.jsx';
@@ -72,6 +73,7 @@ export default function App(){
   const [routeAirError,setRouteAirError]=useState('');
   const [connected,setConnected]=useState(false);
   const [profile,setProfile]=useState(null);
+  const [access,setAccess]=useState('checking');
   const [authOpen,setAuthOpen]=useState(false);
   const [dashboardOpen,setDashboardOpen]=useState(false);
   const [trips,setTrips]=useState([]);
@@ -81,9 +83,20 @@ export default function App(){
   const searchesRef=useRef({start:0,end:0});
   const mapRef=useRef(null);
 
+  // A returning, signed-in Cognito user skips the entry gate. A guest must
+  // explicitly choose Guest Mode once per browser tab (sessionStorage).
+  // Nothing from the main planner/map is mounted until access is chosen.
   useEffect(()=>{
     let active=true;
-    void restoreSession().then(account=>{if(active)setProfile(account);}).catch(()=>{});
+    const fallback=()=>{
+      try{return sessionStorage.getItem('climora_entry_guest_v1')==='yes'?'guest':'gate';}
+      catch{return 'gate';}
+    };
+    void restoreSession().then(account=>{
+      if(!active)return;
+      setProfile(account);
+      setAccess(account?'member':fallback());
+    }).catch(()=>{if(active)setAccess(fallback());});
     return()=>{active=false;};
   },[]);
   useEffect(()=>setTrips(readTrips(profile)),[profile]);
@@ -99,8 +112,31 @@ export default function App(){
     }catch(err){setSaveMessage(err.message||'Could not save this journey.');}
   },[analysis,selectedId,profile]);
   const removeSavedTrip=useCallback(id=>setTrips(deleteTrip(profile,id)),[profile]);
+  const enterAsGuest=useCallback(()=>{
+    try{sessionStorage.setItem('climora_entry_guest_v1','yes');}catch{}
+    setAuthOpen(false);
+    setProfile(null);
+    setAccess('guest');
+  },[]);
+  const handleAuthenticated=useCallback(account=>{
+    try{sessionStorage.removeItem('climora_entry_guest_v1');}catch{}
+    setProfile(account);
+    setAccess('member');
+    setAuthOpen(false);
+    setDashboardOpen(true);
+  },[]);
   const logout=useCallback(()=>{
-    signOut();setProfile(null);setDashboardOpen(false);setSaveMessage('');
+    signOut();
+    try{sessionStorage.removeItem('climora_entry_guest_v1');}catch{}
+    // Do not expose a previous account's in-memory trip or route after logout.
+    ++requestSeq.current;
+    requestController.current?.abort();
+    setAnalysis(null);setSelectedId(null);setError('');setEnv({start:null,end:null});
+    setRouteAir(null);setRouteAirError('');setTrips([]);setSaveMessage('');
+    setLoading(false);setEnvLoading(false);setRouteAirLoading(false);
+    setStart(initialStart);setEnd(initialEnd);
+    setStartText(initialStart.name);setEndText(initialEnd.name);
+    setProfile(null);setDashboardOpen(false);setAuthOpen(false);setAccess('gate');
   },[]);
 
   const invalidate=useCallback(()=>{
@@ -221,11 +257,19 @@ export default function App(){
     targets.forEach(target=>observer.observe(target));
     document.documentElement.classList.add('cx-motion-enabled');
     return ()=>{observer.disconnect();document.documentElement.classList.remove('cx-motion-enabled');};
-  },[]);
+  },[access]);
   useEffect(()=>()=>{requestController.current?.abort();},[]);
   const visibleRoute=analysis?.routes.find(r=>String(r.id)===String(selectedId||analysis.bestId))||null;
   const detailsRoute=visibleRoute;
   const activeMode=analysis?.mode||mode;
+
+  // Only the choice screen mounts before a successful Cognito restore/sign-in
+  // or an explicit guest selection. Neither map nor routing components render.
+  if(access==='checking') return <div className="cx-entry-loading" role="status" aria-live="polite"><span className="cx-entry-loading-mark">✦</span><strong>CLIMORA AI</strong><span>Checking your session…</span></div>;
+  if(access==='gate') return <>
+    <EntryGate onSignIn={()=>setAuthOpen(true)} onGuest={enterAsGuest}/>
+    <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onContinueGuest={enterAsGuest} onAuthenticated={handleAuthenticated}/>
+  </>;
   return <>
     <SiteHeader connected={connected} profile={profile} onOpenAuth={()=>setAuthOpen(true)} onOpenDashboard={()=>setDashboardOpen(true)}/><main><ExperienceHero/><CapabilitiesStrip/>
       <section id="planner" className="wrap planner-section cx-section" data-reveal="">
@@ -277,7 +321,7 @@ export default function App(){
           <article className="panel upcoming-card"><span className="upcoming-symbol" aria-hidden="true">📍</span><span className="upcoming-status">PLANNED · NOT ACTIVE</span><h3>Nearby Friends</h3><p>Mutual opt-in location sharing, invitations and expiry. No friend's location is currently collected or shown.</p></article></div>
       </section>
     </main><footer className="footer">Climora AI · React · Vite · AWS Lambda · OpenRouteService · Google Maps · Open-Meteo <span>Non-commercial hackathon prototype</span></footer>
-    <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuthenticated={account=>{setProfile(account);setDashboardOpen(true);}}/>
-    {dashboardOpen&&<UserDashboard profile={profile} trips={trips} onClose={()=>setDashboardOpen(false)} onSignIn={()=>{setDashboardOpen(false);setAuthOpen(true);}} onSignOut={logout} onRemoveTrip={removeSavedTrip} onUseTrip={planSavedTrip}/>}
+    <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onContinueGuest={enterAsGuest} onAuthenticated={handleAuthenticated}/>
+    {dashboardOpen&&<UserDashboard profile={profile} trips={trips} onClose={()=>setDashboardOpen(false)} onSignIn={()=>{setDashboardOpen(false);setAuthOpen(true);}} onSignOut={logout} onExitGuest={logout} onRemoveTrip={removeSavedTrip} onUseTrip={planSavedTrip}/>}
   </>;
 }

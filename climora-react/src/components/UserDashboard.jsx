@@ -6,7 +6,7 @@ const prettyTime = iso => {
   return Number.isNaN(+date) ? 'Saved journey' : date.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'});
 };
 
-export default function UserDashboard({ profile, trips, onClose, onSignIn, onSignOut, onRemoveTrip, onUseTrip }) {
+export default function UserDashboard({ profile, trips, onClose, onSignIn, onSignOut, onExitGuest, onRemoveTrip, onUseTrip }) {
   const closeButton = useRef(null);
   useEffect(() => {
     closeButton.current?.focus();
@@ -31,7 +31,7 @@ export default function UserDashboard({ profile, trips, onClose, onSignIn, onSig
         </article>)}
       </div>}
       <div className="dashboard-note">Trips are stored locally on this device and grouped by Cognito account. They are not securely backed up or synchronized across devices. Planning again requests fresh route data; saved ETAs are historical snapshots.</div>
-      <div className="dashboard-bottom">{profile?<button className="dashboard-signout" onClick={onSignOut}>Sign out</button>:<button className="account-primary" onClick={onSignIn}>Create account / Sign in →</button>}<button className="dashboard-cancel" onClick={onClose}>Back to planner</button></div>
+      <div className="dashboard-bottom">{profile?<button className="dashboard-signout" onClick={onSignOut}>Sign out</button>:<><button className="account-primary" onClick={onSignIn}>Create account / Sign in →</button><button className="dashboard-signout" onClick={onExitGuest}>Leave Guest Mode</button></>}<button className="dashboard-cancel" onClick={onClose}>Back to planner</button></div>
     </section>
   </div>;
 }
