@@ -5,10 +5,9 @@ import EnvironmentCard from './components/EnvironmentCard.jsx';
 import PollutionIntelligence from './components/PollutionIntelligence.jsx';
 import DepartureAdvisor from './components/DepartureAdvisor.jsx';
 import AuthModal from './components/AuthModal.jsx';
-import UserDashboard from './components/UserDashboard.jsx';
+import AccountPanel from './components/AccountPanel.jsx';
 import EntryGate from './components/EntryGate.jsx';
 import { restoreSession, signOut } from './auth/cognito.js';
-import { deleteTrip, makeTrip, readTrips, saveTrip } from './auth/trips.js';
 import { SiteHeader, ExperienceHero, CapabilitiesStrip } from './components/ExperienceHero.jsx';
 import { PRESETS, MODE_META, searchPlaces, isCoords, formatCoords, formatMinutes } from './services/places.js';
 import { requestRoutes, googleDirectionsLink, nearbySearchLink } from './services/routing.js';
@@ -31,7 +30,7 @@ function LocationField({label,fieldId,text,place,onTextChange,onSearch,onSelect,
       {onMyLocation&&<button type="button" onClick={onMyLocation}>⌖ Use my location</button>}</div>
   </div>;
 }
-function RouteDetails({route,bestId,start,end,mode,onSave,saveMessage}){
+function RouteDetails({route,bestId,start,end,mode}){
   if(!route)return null;
   const fastest=String(route.id)===bestId;
   const within=route.within_time_limit!==false;
@@ -42,10 +41,9 @@ function RouteDetails({route,bestId,start,end,mode,onSave,saveMessage}){
       <div><small>Arrival if leaving now</small><strong>{time}</strong></div></div>
     <p className="detail-note"><strong>Road-network checked:</strong> {route.quality_check==='passed'?'Provider route passed snapping and detour checks.':'Provider route; checks not reported.'} Start snap: {Number.isFinite(route.start_snap_m)?`${Math.round(route.start_snap_m)} m`:'not provided'}; destination snap: {Number.isFinite(route.end_snap_m)?`${Math.round(route.end_snap_m)} m`:'not provided'}.</p>
     <p className="detail-note">{fastest?'Fastest returned route estimate.':'Alternative road/path option.'} {within?'Within your selected detour limit.':'Long detour, exceeds your selected limit.'} Distances and duration come from the OpenRouteService {MODE_META[mode]?.label} profile. No live traffic or stops included. Modeled air screening, when available, is shown in the comparison section.</p>
-    <div className="route-actions"><button type="button" className="save-journey-action" onClick={onSave}>☆ Save this journey</button><a href={googleDirectionsLink(start.coords,end.coords,mode)} target="_blank" rel="noopener noreferrer">↗ Open journey in Google Maps</a>
+    <div className="route-actions"><a href={googleDirectionsLink(start.coords,end.coords,mode)} target="_blank" rel="noopener noreferrer">↗ Open journey in Google Maps</a>
       <a href={nearbySearchLink('restaurants and snacks',end.name)} target="_blank" rel="noopener noreferrer">☕ Food near destination</a>
       <a href={nearbySearchLink('hotels and stays',end.name)} target="_blank" rel="noopener noreferrer">🛏 Stays near destination</a></div>
-    {saveMessage&&<p className="trip-save-status" role="status">{saveMessage}</p>}
     {!!route.directions_preview?.length&&<details className="directions-preview"><summary>Preview road directions (first {Math.min(16,route.directions_preview.length)} steps)</summary><ol>{route.directions_preview.slice(0,16).map((step,i)=><li key={i}>{step.instruction} <small>({Number(step.distance_km||0).toFixed(2)} km)</small></li>)}</ol></details>}
     <p className="detail-note">Google Maps may calculate a different route/ETA. Food and stays are searches, not reservations.</p>
   </div>;
@@ -75,9 +73,7 @@ export default function App(){
   const [profile,setProfile]=useState(null);
   const [access,setAccess]=useState('checking');
   const [authOpen,setAuthOpen]=useState(false);
-  const [dashboardOpen,setDashboardOpen]=useState(false);
-  const [trips,setTrips]=useState([]);
-  const [saveMessage,setSaveMessage]=useState('');
+  const [accountOpen,setAccountOpen]=useState(false);
   const requestSeq=useRef(0);
   const requestController=useRef(null);
   const searchesRef=useRef({start:0,end:0});
@@ -99,19 +95,6 @@ export default function App(){
     }).catch(()=>{if(active)setAccess(fallback());});
     return()=>{active=false;};
   },[]);
-  useEffect(()=>setTrips(readTrips(profile)),[profile]);
-
-  const saveCurrentTrip=useCallback(()=>{
-    if(!analysis)return;
-    const selectedRoute=analysis.routes.find(r=>String(r.id)===String(selectedId||analysis.bestId));
-    if(!selectedRoute)return;
-    try {
-      const trip=makeTrip(analysis.start,analysis.end,analysis.mode,selectedRoute);
-      setTrips(saveTrip(profile,trip));
-      setSaveMessage('Journey saved on this device. Open My trips to plan it again.');
-    }catch(err){setSaveMessage(err.message||'Could not save this journey.');}
-  },[analysis,selectedId,profile]);
-  const removeSavedTrip=useCallback(id=>setTrips(deleteTrip(profile,id)),[profile]);
   const enterAsGuest=useCallback(()=>{
     try{sessionStorage.setItem('climora_entry_guest_v1','yes');}catch{}
     setAuthOpen(false);
@@ -123,20 +106,20 @@ export default function App(){
     setProfile(account);
     setAccess('member');
     setAuthOpen(false);
-    setDashboardOpen(true);
+    setAccountOpen(true);
   },[]);
   const logout=useCallback(()=>{
     signOut();
     try{sessionStorage.removeItem('climora_entry_guest_v1');}catch{}
-    // Do not expose a previous account's in-memory trip or route after logout.
+    // Clear previously displayed routes and forecast data on sign-out.
     ++requestSeq.current;
     requestController.current?.abort();
     setAnalysis(null);setSelectedId(null);setError('');setEnv({start:null,end:null});
-    setRouteAir(null);setRouteAirError('');setTrips([]);setSaveMessage('');
+    setRouteAir(null);setRouteAirError('');
     setLoading(false);setEnvLoading(false);setRouteAirLoading(false);
     setStart(initialStart);setEnd(initialEnd);
     setStartText(initialStart.name);setEndText(initialEnd.name);
-    setProfile(null);setDashboardOpen(false);setAuthOpen(false);setAccess('gate');
+    setProfile(null);setAccountOpen(false);setAuthOpen(false);setAccess('gate');
   },[]);
 
   const invalidate=useCallback(()=>{
@@ -144,17 +127,8 @@ export default function App(){
     requestController.current?.abort();
     setAnalysis(null);setSelectedId(null);setLoading(false);
     setEnv({start:null,end:null});setEnvLoading(false);
-    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setError('');setSaveMessage('');
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setError('');
   },[]);
-
-  const planSavedTrip=useCallback(trip=>{
-    invalidate();
-    setStart(trip.start);setEnd(trip.end);
-    setStartText(trip.start.name);setEndText(trip.end.name);setMode(trip.mode);
-    setStartResults([]);setEndResults([]);
-    setDashboardOpen(false);
-    document.getElementById('planner')?.scrollIntoView({behavior:'smooth'});
-  },[invalidate]);
 
   const pickPlace=useCallback((kind,place)=>{
     invalidate();
@@ -206,7 +180,7 @@ export default function App(){
     requestController.current?.abort();
     const controller=new AbortController();requestController.current=controller;
     setLoading(true);setAnalysis(null);setSelectedId(null);setEnv({start:null,end:null});setEnvLoading(false);
-    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');setSaveMessage('');
+    setRouteAir(null);setRouteAirLoading(false);setRouteAirError('');
     try{
       const result=await requestRoutes({start:startLocation.coords,end:end.coords,travelMode:mode,maxExtraPercent:percent,maxExtraMinutes:minutes},controller.signal);
       if(seq!==requestSeq.current)return;
@@ -271,7 +245,7 @@ export default function App(){
     <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onContinueGuest={enterAsGuest} onAuthenticated={handleAuthenticated}/>
   </>;
   return <>
-    <SiteHeader connected={connected} profile={profile} onOpenAuth={()=>setAuthOpen(true)} onOpenDashboard={()=>setDashboardOpen(true)}/><main><ExperienceHero/><CapabilitiesStrip/>
+    <SiteHeader connected={connected} profile={profile} onOpenAuth={()=>setAuthOpen(true)} onOpenAccount={()=>setAccountOpen(true)}/><main><ExperienceHero/><CapabilitiesStrip/>
       <section id="planner" className="wrap planner-section cx-section" data-reveal="">
         <div className="section-top"><div><p className="eyebrow">01 <span className="cx-eyebrow-slash">/</span> YOUR JOURNEY, REIMAGINED</p><h2>Where will life take you <em>today?</em></h2><p className="section-sub">Explore mapped roads across Maharashtra. Search a town, select a real location, or pin precise road start/end points. Distances are provider-measured, not straight-line guesses.</p></div><span className="chip cx-section-chip">◉ &nbsp; PERSONAL ROUTE STUDIO</span></div>
         <div className="quick-trip-row" aria-label="Sample local journeys"><strong>QUICK START &nbsp; ↗</strong>{Object.keys(PRESETS).map(key=><button key={key} type="button" onClick={()=>preset(key)}>{key==='bandra-juhu'?'Bandra → Juhu':key==='andheri-powai'?'Andheri → Powai':'Dadar → CSMT'}</button>)}</div>
@@ -308,7 +282,7 @@ export default function App(){
           })}
         </div>
         <PollutionIntelligence analysis={analysis} result={routeAir} loading={routeAirLoading} error={routeAirError} selectedId={selectedId||analysis?.bestId} onSelect={id=>mapRef.current?.selectRoute(id)}/>
-        {analysis&&<RouteDetails route={detailsRoute} bestId={analysis.bestId} start={analysis.start} end={analysis.end} mode={activeMode} onSave={saveCurrentTrip} saveMessage={saveMessage}/>}
+        {analysis&&<RouteDetails route={detailsRoute} bestId={analysis.bestId} start={analysis.start} end={analysis.end} mode={activeMode}/>}
       </section>
       <GpsPanel route={visibleRoute} mode={activeMode} mapRef={mapRef} onReroute={handleReroute}/>
       <DepartureAdvisor route={visibleRoute} mode={MODE_META[activeMode]?.label} routeStart={analysis?.start.name} routeEnd={analysis?.end.name}/>
@@ -322,6 +296,6 @@ export default function App(){
       </section>
     </main><footer className="footer">Climora AI · React · Vite · AWS Lambda · OpenRouteService · Google Maps · Open-Meteo <span>Non-commercial hackathon prototype</span></footer>
     <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onContinueGuest={enterAsGuest} onAuthenticated={handleAuthenticated}/>
-    {dashboardOpen&&<UserDashboard profile={profile} trips={trips} onClose={()=>setDashboardOpen(false)} onSignIn={()=>{setDashboardOpen(false);setAuthOpen(true);}} onSignOut={logout} onExitGuest={logout} onRemoveTrip={removeSavedTrip} onUseTrip={planSavedTrip}/>}
+    {accountOpen&&<AccountPanel profile={profile} onClose={()=>setAccountOpen(false)} onSignIn={()=>{setAccountOpen(false);setAuthOpen(true);}} onSignOut={logout} onExitGuest={logout}/>}
   </>;
 }

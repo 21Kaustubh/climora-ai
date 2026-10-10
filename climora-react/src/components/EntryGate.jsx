@@ -43,7 +43,7 @@ export default function EntryGate({ onSignIn, onGuest }) {
         <span className="cx-entry-card-kicker">YOUR CLIMORA EXPERIENCE</span>
         <h2>How would you<br/><span>like to explore?</span></h2>
         <p>Choose a mode to enter your navigation dashboard.</p>
-        <button type="button" className="cx-entry-signin" onClick={onSignIn}><span className="cx-entry-button-icon" aria-hidden="true">◎</span><span><strong>Sign in or create account</strong><small>Personalize your journey · My Trips</small></span><span aria-hidden="true">↗</span></button>
+        <button type="button" className="cx-entry-signin" onClick={onSignIn}><span className="cx-entry-button-icon" aria-hidden="true">◎</span><span><strong>Sign in or create account</strong><small>Your Climora account · Secure sign-in</small></span><span aria-hidden="true">↗</span></button>
         <div className="cx-entry-divider"><span/> OR <span/></div>
         <button type="button" className="cx-entry-guest" onClick={onGuest}><span className="cx-entry-button-icon" aria-hidden="true">⌖</span><span><strong>Continue as Guest</strong><small>Explore maps, routes, AQI & forecasts</small></span><span aria-hidden="true">→</span></button>
         <div className="cx-entry-note">🔒 Your journey starts only after you select an access mode. Guest mode does not require an account.</div>

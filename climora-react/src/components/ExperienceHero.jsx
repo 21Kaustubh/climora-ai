@@ -60,7 +60,7 @@ function NavigationArtwork() {
   </div>;
 }
 
-export function SiteHeader({ connected, profile, onOpenAuth, onOpenDashboard }) {
+export function SiteHeader({ connected, profile, onOpenAuth, onOpenAccount }) {
   const [open,setOpen] = useState(false);
   const links = [
     ['#planner','Route planner'],['#comparison','Compare'],['#navigation','Navigation'],['#departure','Depart smarter'],['#environment','Air intelligence'],['#upcoming','Roadmap']
@@ -80,12 +80,12 @@ export function SiteHeader({ connected, profile, onOpenAuth, onOpenDashboard }) 
       <button type="button" className="cx-mobile-menu" aria-label="Toggle navigation" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?'✕':'☰'}</button>
       <nav className={`cx-nav ${open?'cx-nav-open':''}`} aria-label="Main navigation">
         {links.map(([href,label])=><a key={href} href={href} onClick={()=>setOpen(false)}>{label}</a>)}
-        <button type="button" className="cx-nav-mobile-action" onClick={()=>{setOpen(false);onOpenDashboard();}}>◈ My trips / Dashboard</button>
+        <button type="button" className="cx-nav-mobile-action" onClick={()=>{setOpen(false);onOpenAccount();}}>◎ My account</button>
         {!profile&&<button type="button" className="cx-nav-mobile-action" onClick={()=>{setOpen(false);onOpenAuth();}}>✧ Sign in / Sign up</button>}
       </nav>
       <div className="cx-header-actions">
         <span className="cx-api-status" title={connected?'AWS request completed':'AWS connectivity is checked when you calculate a route'}><i/>{connected?'ROUTING CONNECTED':'SYSTEM READY'}</span>
-        <button type="button" className="cx-account-link" onClick={onOpenDashboard} aria-label="Open your trips dashboard">{profile?`◎ ${profile.displayName}`:'◈ My trips'}</button>
+        <button type="button" className="cx-account-link" onClick={onOpenAccount} aria-label="Open your account">{profile?`◎ ${profile.displayName}`:'◎ Account'}</button>
         {!profile&&<button type="button" className="cx-account-signin" onClick={onOpenAuth}>Sign in ↗</button>}
         <a className="cx-nav-cta" href="#planner">Plan a journey <span>↗</span></a>
       </div>

@@ -6,7 +6,7 @@ import {
 
 const TITLES = {
   signin: ['Welcome back', 'Sign in to personalize your Climora experience.'],
-  signup: ['Create your account', 'Explore freely, save journeys and return anytime.'],
+  signup: ['Create your account', 'Create your Climora account to sign in securely.'],
   confirm: ['Verify your email', 'Enter the confirmation code sent by AWS Cognito.'],
   reset: ['Reset your password', 'We will send a password reset code to your email.'],
   resetConfirm: ['Choose a new password', 'Use the code from your email to recover your account.'],
@@ -99,7 +99,7 @@ export default function AuthModal({ open, onClose, onContinueGuest = onClose, on
         </div>
         <div className="account-guest"><span>Just exploring?</span><button onClick={onContinueGuest} type="button">Continue without account ↗</button></div>
       </>}
-      <p className="account-fineprint">Accounts run on AWS Cognito when configured. Your saved trips in this version stay on this device, not synchronized to the cloud.</p>
+      <p className="account-fineprint">Sign-in and verification use AWS Cognito when configured. Continue as guest if you prefer.</p>
     </section>
   </div>;
 }
