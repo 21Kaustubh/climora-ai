@@ -6,5 +6,7 @@ import './react.css';
 import './premium.css';
 import './departure.css';
 import './account.css';
+import './phase-a.css';
+import './journey.css';
 
 createRoot(document.getElementById('root')).render(<App />);

@@ -63,7 +63,7 @@ function NavigationArtwork() {
 export function SiteHeader({ connected, profile, onOpenAuth, onOpenAccount }) {
   const [open,setOpen] = useState(false);
   const links = [
-    ['#planner','Route planner'],['#comparison','Compare'],['#navigation','Navigation'],['#departure','Depart smarter'],['#environment','Air intelligence'],['#upcoming','Roadmap']
+    ['#planner','Route planner'],['#comparison','Compare'],['#navigation','Navigation'],['#departure','Depart smarter'],['#environment','Air intelligence'],['#travel-tools','Travel tools'],['#upcoming','Roadmap']
   ];
   useEffect(()=>{
     if(!open)return;

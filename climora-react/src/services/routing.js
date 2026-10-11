@@ -1,4 +1,5 @@
 import { MODE_META } from './places.js';
+import { requestGoogleTrafficRoutes } from './googleTrafficRoutes.js';
 
 const ENDPOINT = import.meta.env.VITE_CLIMORA_API_URL || 'https://gbxdgy9b09.execute-api.ap-south-1.amazonaws.com/analyze-route';
 
@@ -9,6 +10,16 @@ export function unpackLambdaResponse(raw) {
 }
 
 export async function requestRoutes({ start, end, travelMode, maxExtraPercent, maxExtraMinutes }, signal) {
+  let googleFallbackReason = '';
+  if(travelMode === 'car') {
+    try {
+      return await requestGoogleTrafficRoutes({start,end},signal);
+    } catch (err) {
+      if(signal?.aborted || err?.name === 'AbortError') throw err;
+      googleFallbackReason = err?.message || 'Google traffic API unavailable';
+      console.warn('Traffic-aware Google Routes unavailable; falling back to AWS/OpenRouteService:', err);
+    }
+  }
   const response = await fetch(ENDPOINT, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
     body: JSON.stringify({
@@ -41,7 +52,8 @@ export async function requestRoutes({ start, end, travelMode, maxExtraPercent, m
     Number.isFinite(Number(r.duration_minutes))
   );
   if (!routes.length) throw new Error('Routing provider returned no valid road geometry.');
-  return { body, routes, bestId: String(body.recommended_route.id) };
+  return { body, routes, bestId: String(body.recommended_route.id),
+    trafficAware:false, provider:'OpenRouteService (AWS fallback)', trafficFallbackReason:googleFallbackReason };
 }
 
 export function googleDirectionsLink(start, end, mode) {

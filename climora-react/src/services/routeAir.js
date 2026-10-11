@@ -6,6 +6,8 @@
  * measurement or an inhaled-dose/medical exposure calculation.
  */
 
+import { ROUTE_POLICY } from './routePriority.js';
+
 const AIR_API = 'https://air-quality-api.open-meteo.com/v1/air-quality';
 const MAX_ROUTES = 4;
 const BATCH_SIZE = 24;
@@ -149,7 +151,7 @@ export async function getRouteAirIntelligence(routes, fastestId, signal, fetcher
 
   const byRoute = {};
   for (const { route, samples } of plans) {
-    let concentrationSum = 0, aqiMax = -Infinity, weightSum = 0;
+    let concentrationSum = 0, aqiSum = 0, aqiWeightSum = 0, aqiMax = -Infinity, weightSum = 0;
     const cellKeys = [];
     let validCount = 0;
     for (let i = 0; i < samples.length; i++) {
@@ -166,9 +168,13 @@ export async function getRouteAirIntelligence(routes, fastestId, signal, fetcher
         weightSum += weight;
         validCount++;
       }
-      if (Number.isFinite(aqi)) aqiMax = Math.max(aqiMax, aqi);
+      if (Number.isFinite(aqi) && aqi >= 0) {
+        aqiSum += aqi * weight;
+        aqiWeightSum += weight;
+        aqiMax = Math.max(aqiMax, aqi);
+      }
     }
-    if (validCount < samples.length || weightSum <= 0) {
+    if (validCount < samples.length || weightSum <= 0 || aqiWeightSum < samples.length - 1) {
       byRoute[String(route.id)] = { available: false, reason: 'Incomplete air-quality forecast along this route.' };
       continue;
     }
@@ -178,6 +184,7 @@ export async function getRouteAirIntelligence(routes, fastestId, signal, fetcher
     byRoute[String(route.id)] = {
       available: true,
       avgPm25,
+      avgUsAqi: aqiSum / aqiWeightSum,
       maxSampledUsAqi: Number.isFinite(aqiMax) ? aqiMax : null,
       pmTimeProxy,
       sampledLocations: samples.length,
@@ -193,33 +200,31 @@ export async function getRouteAirIntelligence(routes, fastestId, signal, fetcher
   const allValid = usableRoutes.every(r => byRoute[String(r.id)]?.available);
   let status = 'indistinguishable';
   let recommendationId = null;
-  let explanation = 'Modeled air-quality grids cannot reliably distinguish cleaner streets for these routes. Use the fastest valid option for time efficiency.';
+  let explanation = 'Forecast grids do not distinguish these roads reliably. The fastest eligible road is preferred.';
 
   if (!allValid || !fastestScore?.available) {
     status = 'unavailable';
-    explanation = 'Air-quality forecast coverage is incomplete. Route distances and navigation still work.';
+    explanation = 'AQI forecasts were incomplete. The fastest eligible route remains the default; distance and directions still work.';
   } else if (usableRoutes.length === 1) {
     status = 'single';
-    explanation = 'Only one road route was returned. Modeled values are informational; no cleaner-route comparison is possible.';
+    explanation = 'Only one route passed the distance/time caps, so an AQI route comparison is not possible.';
   } else if (uniqueCells < 2) {
-    explanation = 'All route samples fall in the same coarse air-quality model cell. A street-level cleaner-route claim would be misleading.';
+    explanation = 'The candidate roads fall in the same coarse air-quality grid cell. A cleaner-street claim would be misleading.';
   } else {
     const base = fastestScore;
     const candidates = usableRoutes.filter(r => r.within_time_limit !== false && String(r.id) !== String(fastest.id))
-      .map(r => ({ route: r, air: byRoute[String(r.id)] }))
-      .filter(({ air }) => air?.available &&
-        // Different sampling of model grid cells is necessary for meaningful differences.
+      .map(route => ({route, air: byRoute[String(route.id)]}))
+      .filter(({air}) => air?.available &&
         occupancyDifference(base.cellSequence, air.cellSequence) > 0.2 &&
-        air.avgPm25 <= base.avgPm25 * 0.9 &&
-        base.avgPm25 - air.avgPm25 >= 3 &&
-        air.pmTimeProxy <= base.pmTimeProxy * 0.92)
-      .sort((a, b) => a.air.pmTimeProxy - b.air.pmTimeProxy);
+        base.avgUsAqi - air.avgUsAqi >= ROUTE_POLICY.minimumAqiImprovement &&
+        base.avgUsAqi - air.avgUsAqi >= base.avgUsAqi * ROUTE_POLICY.minimumAqiImprovementPct / 100)
+      .sort((a,b)=>a.air.avgUsAqi-b.air.avgUsAqi || a.route.duration_minutes-b.route.duration_minutes);
     if (candidates.length) {
-      status = 'lower-modelled-exposure';
+      status = 'lower-modelled-aqi';
       recommendationId = String(candidates[0].route.id);
-      explanation = 'One detour has materially lower modeled PM2.5 and cumulative time–concentration proxy within your allowed extra time. Treat this as coarse regional screening, not street-level proof.';
+      explanation = `Route ${recommendationId} has materially lower distance-weighted modeled US AQI than the fastest eligible option. Both distance and time caps are satisfied. Model resolution is coarse; this is not proof of cleaner street-level air.`;
     } else {
-      explanation = 'Modeled differences are not strong enough to justify recommending an alternate road. The fastest route remains the time-efficient choice.';
+      explanation = 'No eligible alternative has a reliable, sufficiently large modeled US AQI improvement. The fastest eligible road remains recommended.';
     }
   }
   // Drop internal grid-cell sequences from the UI-facing result.

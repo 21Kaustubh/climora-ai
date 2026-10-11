@@ -1,10 +1,11 @@
-/* Google Maps presentation adapter. All route coordinates remain original [longitude, latitude].
- * Roads, travel times, route validation, and environmental data are NOT recalculated here.
+/* Google Maps presentation adapter. Route coordinates use [longitude, latitude].
+ * When available, car geometry and traffic-aware ETA are sourced together
+ * from Google Routes; other modes/fallback routes retain AWS provider data.
  */
 const COLORS = ['#36dea2', '#a990fa', '#f2ad57', '#5db8fa', '#ff819d'];
 let googleLoaderPromise = null;
 
-function loadGoogleMaps(apiKey) {
+export function loadGoogleMaps(apiKey) {
   if (window.google?.maps?.importLibrary) return Promise.resolve();
   if (googleLoaderPromise) return googleLoaderPromise;
   googleLoaderPromise = new Promise((resolve, reject) => {
@@ -30,6 +31,12 @@ function loadGoogleMaps(apiKey) {
     document.head.appendChild(script);
   });
   return googleLoaderPromise;
+}
+
+export function ensureGoogleMapsLoaded() {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  if (!key || key.startsWith('PASTE_')) throw new Error('Google Maps key is missing.');
+  return loadGoogleMaps(key);
 }
 
 function validPoint(c) {
@@ -141,8 +148,11 @@ export function createGoogleMapController({ host, onStatus, onError, onSelect, o
       polyline.addListener('mouseout', () => lineStyle(item));
       animatePath(item, index);
     });
-    report(`${routes.size} real road route(s) displayed on Google Maps`);
-    fitMap();
+    report(`${routes.size} eligible road route(s) displayed on Google Maps`);
+    // Keep a single primary option visible by default. Other eligible routes
+    // remain available through "All routes" / route cards.
+    if (bestId != null && routes.has(String(bestId))) selectRoute(String(bestId));
+    else fitMap();
   }
   function selectRoute(id) {
     const key = String(id);
@@ -180,7 +190,8 @@ export function createGoogleMapController({ host, onStatus, onError, onSelect, o
   }
   function enablePointPicking(mode) {
     selectionMode = mode === 'start' || mode === 'end' ? mode : null;
-    report(selectionMode ? `Click Google Maps to choose ${selectionMode.toUpperCase()}` : 'Map selection disabled');
+    if (map) map.setOptions({clickableIcons:true});
+    report(selectionMode ? `Click a building label or exact map point for ${selectionMode.toUpperCase()}` : 'Map selection disabled');
   }
   function updateUserLocation(coords, accuracyMeters, follow = true) {
     if (!map || !validPoint(coords)) return;
@@ -208,7 +219,7 @@ export function createGoogleMapController({ host, onStatus, onError, onSelect, o
     if (!trafficLayer) trafficLayer = new google.maps.TrafficLayer();
     trafficOn = !trafficOn;
     trafficLayer.setMap(trafficOn ? map : null);
-    report(trafficOn ? 'Google traffic overlay (visual only: ETA still from AWS)' : 'Traffic overlay hidden');
+    report(trafficOn ? 'Traffic congestion overlay visible; driving ETA depends on the selected provider.' : 'Traffic overlay hidden');
     return trafficOn;
   }
   async function init(apiKey, mapId = 'DEMO_MAP_ID') {
@@ -228,19 +239,45 @@ export function createGoogleMapController({ host, onStatus, onError, onSelect, o
       map = new Map(host, {
         center: {lat:19.08,lng:72.84}, zoom:12, mapId, mapTypeId:'roadmap',
         zoomControl:true, mapTypeControl:false, fullscreenControl:true,
-        streetViewControl:true, scaleControl:true, clickableIcons:false,
+        streetViewControl:true, scaleControl:true, clickableIcons:true,
         gestureHandling:'greedy',
       });
-      map.addListener('click', ev => {
+      map.addListener('click', async ev => {
         if (!selectionMode || !ev.latLng) return;
         const mode = selectionMode; selectionMode = null;
         const coords = [Number(ev.latLng.lng().toFixed(6)), Number(ev.latLng.lat().toFixed(6))];
-        callbackFns.onPick?.(mode, coords);
-        report('Point selected. Calculate routes.');
+        let label = null;
+        // Place names on the map are not coordinates in the old city geocoder.
+        // First resolve POI labels through Places (New), then fall back to
+        // a reverse-geocoded approximate address for a plain map click.
+        try {
+          if (ev.placeId) {
+            ev.stop?.();
+            const {Place} = await google.maps.importLibrary('places');
+            const place = new Place({id:ev.placeId});
+            await place.fetchFields({fields:['displayName','formattedAddress','location']});
+            label = [place.displayName,place.formattedAddress].filter(Boolean).join(' · ');
+            const placeLat=Number(typeof place.location?.lat==='function'?place.location.lat():place.location?.lat);
+            const placeLng=Number(typeof place.location?.lng==='function'?place.location.lng():place.location?.lng);
+            if (Number.isFinite(placeLat) && Number.isFinite(placeLng)) {
+              coords[0] = placeLng;
+              coords[1] = placeLat;
+            }
+          } else {
+            const geocoder = new google.maps.Geocoder();
+            const response = await geocoder.geocode({location:{lat:coords[1],lng:coords[0]}});
+            label = response.results?.[0]?.formatted_address || null;
+          }
+        } catch (error) {
+          console.info('Place label unavailable; keeping exact selected coordinates.', error);
+        }
+        if (destroyed) return;
+        callbackFns.onPick?.(mode, coords, label);
+        report(label ? `Selected ${label}` : 'Exact map point selected.');
       });
       endpoints(); fitMap();
       if (pending) {const p = pending; pending = null; drawRoutes(p.items,p.bestId);}
-      report('Google Maps ready · Routing powered by AWS/OpenRouteService');
+      report('Google Maps ready · Car traffic-aware routing enabled when Routes API access is available');
     } catch (error) {
       if (!destroyed) callbackFns.onError?.(error.message || String(error));
       throw error;

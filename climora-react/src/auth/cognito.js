@@ -100,6 +100,21 @@ export function confirmPasswordReset(email, code, password) {
   });
 }
 
+/** Get a fresh Cognito ACCESS token for authenticated profile requests.
+ * No token is stored separately by Climora; Cognito manages the session.
+ */
+export async function getAccessToken() {
+  if (!authConfigured) return null;
+  const user = getPool().getCurrentUser();
+  if (!user) return null;
+  return new Promise(resolve => {
+    user.getSession((err, session) => {
+      if (err || !session?.isValid()) return resolve(null);
+      resolve(session.getAccessToken()?.getJwtToken() || null);
+    });
+  });
+}
+
 export function signOut() {
   if (!authConfigured) return;
   getPool().getCurrentUser()?.signOut();

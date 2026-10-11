@@ -1,0 +1,24 @@
+/* Phase A: AQI-first, distance-controlled route choices. Existing theme retained. */
+.cx-aqi-limit-note{font-size:11px;line-height:1.65;color:#a8c9c3;margin:12px 0 0;padding:12px;background:rgba(44,110,95,.17);border:1px solid rgba(133,218,178,.22);border-radius:11px}
+.cx-aqi-limit-note b{color:#b9f6cd}
+.cx-aqi-choice{display:flex;align-items:flex-start;gap:15px;padding:21px;margin:18px 0 10px;background:linear-gradient(115deg,rgba(43,88,78,.53),rgba(23,49,61,.88));border:1px solid rgba(130,230,173,.35);border-radius:16px}
+.cx-aqi-choice-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:rgba(100,212,149,.14);border:1px solid rgba(143,241,193,.32);color:#a7ffca;font-size:24px}
+.cx-aqi-choice strong{display:block;font-size:16px;color:#e8fff4}
+.cx-aqi-choice p{margin:7px 0 0;color:#b4d8cb;line-height:1.65;font-size:12px}
+.cx-primary-label{display:inline-flex!important;color:#b1ffd5;font-size:10px;font-weight:900;letter-spacing:.35px;padding:8px 10px;margin-top:10px;border-radius:7px;border:1px solid rgba(147,255,186,.25);background:rgba(40,137,92,.25)}
+.cx-route-aqi{display:block!important;font-size:11px;color:#b1cfd1;margin:10px 0 7px}
+.cx-route-aqi b{color:#b2f8cf}
+.route-card:first-child{border-color:rgba(132,244,171,.68);box-shadow:0 11px 34px rgba(17,112,69,.16),inset 0 0 30px rgba(68,196,132,.06)}
+.route-card:first-child::before{height:4px;background:linear-gradient(90deg,#65e1a8,#29b99d)}
+@media(max-width:680px){.cx-aqi-choice{padding:16px}.cx-aqi-choice strong{font-size:14px}}
+/* Traffic-aware routing + Google Places improvements. */
+.cx-traffic-source{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;color:#c5f1e5;font-size:.78rem;font-weight:650}
+.cx-traffic-source .cx-traffic-live{background:rgba(91,224,162,.13);border:1px solid rgba(91,224,162,.4);border-radius:999px;padding:5px 10px}
+.cx-traffic-source .cx-traffic-fallback{background:rgba(248,182,103,.09);border:1px solid rgba(248,182,103,.37);border-radius:999px;padding:5px 10px;color:#ffd8a6}
+.cx-search-tip{font-size:.75rem;color:#a0c9c5;line-height:1.5;margin:4px 0 12px}
+.place-results{max-height:255px;overflow-y:auto;overscroll-behavior:contain;z-index:40}
+.place-choice{text-align:left;line-height:1.4;overflow-wrap:anywhere}
+.cx-route-traffic{display:block;margin-top:8px;font-size:.75rem;color:#adf4d4}
+.cx-route-traffic.cx-route-traffic-estimate{color:#efc598}
+.cx-traffic-freshness{font-size:.75rem;color:#b7d6d4;line-height:1.4}
+@media (prefers-reduced-motion:reduce){.place-results,.cx-traffic-source{animation:none!important;transition:none!important}}

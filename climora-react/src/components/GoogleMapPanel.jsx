@@ -21,7 +21,7 @@ export default function GoogleMapPanel({start,end,analysis,mapRef,onSelect,onPic
       onStatus:setMapStatus,
       onError:message=>{setMapError(message);errorRef.current?.(message);},
       onSelect:id=>selectRef.current?.(id),
-      onPick:(mode,coords)=>pickRef.current?.(mode,coords),
+      onPick:(mode,coords,name)=>pickRef.current?.(mode,coords,name),
     });
     mapRef.current=api;
     api.init(apiKey,mapId).catch(()=>{});
@@ -52,6 +52,6 @@ export default function GoogleMapPanel({start,end,analysis,mapRef,onSelect,onPic
       <div id="routeMap" ref={host} aria-label="Google Maps showing selectable provider road routes" />
       {mapError&&<div className="google-error-overlay" role="alert">{mapError}<small>Use .env.local to configure the API key, then restart Vite.</small></div>}
     </div>
-    <div className="map-legend"><span className="cx-map-legend-label">MAP KEY</span><span><i className="legend-dot green"/> Primary route</span><span><i className="legend-dot purple"/> Alternative</span><span><i className="legend-dot amber"/> Alternative</span><small>Route colors are visual labels, not air-quality rankings. Traffic overlay does not alter provider ETA.</small></div>
+    <div className="map-legend"><span className="cx-map-legend-label">MAP KEY</span><span><i className="legend-dot green"/> AQI-first / primary</span><span><i className="legend-dot purple"/> Alternative</span><span><i className="legend-dot amber"/> Alternative</span><small>Colors identify routes, not air quality. Car ETA uses Google traffic-aware estimates when available; other modes / fallback show provider estimates.</small></div>
   </section>;
 }
