@@ -1,0 +1,52 @@
+/* Climora Travel Tools — scoped and theme-compatible. Existing map and GPS unchanged. */
+.cx-travel-tools-section{padding-block:74px 65px;scroll-margin-top:85px}
+.cx-travel-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+.cx-tool-card{padding:26px;margin-bottom:20px;border:1px solid rgba(125,221,191,.2);border-radius:20px;background:linear-gradient(145deg,rgba(33,61,64,.65),rgba(14,28,39,.94));color:#e5f5f3}
+.cx-tool-heading{display:flex;align-items:flex-start;gap:15px;margin-bottom:19px}
+.cx-tool-heading h3{margin:0 0 5px;font-size:1.19rem;font-weight:750;color:#f5fffd}
+.cx-tool-heading p{margin:0;color:#a9c9c8;line-height:1.5;font-size:.85rem}
+.cx-tool-icon{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid rgba(175,244,203,.35);border-radius:14px;background:rgba(79,193,157,.12);color:#a8efd1;font-size:1.45rem}
+.cx-tool-select{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:13px}
+.cx-tool-select label,.cx-friends-controls label{font-size:.84rem;color:#c5e1de;font-weight:650}
+.cx-tool-select input[type="time"],.cx-tool-select select,.cx-taxi-row input,.cx-friends-ui input:not([type="checkbox"]){border:1px solid rgba(160,220,216,.25);border-radius:9px;background:#0c1b26;color:#f4ffff;padding:10px 12px;min-width:0;font:inherit}
+.cx-tool-select select{flex:1;max-width:240px}
+.cx-tool-muted,.cx-tool-disclaimer,.cx-tool-advice{font-size:.8rem;line-height:1.6;color:#a8bfbd}
+.cx-tool-advice{border:1px solid rgba(247,192,116,.31);color:#edcd92;background:rgba(187,126,45,.09);padding:11px 13px;border-radius:11px}
+.cx-tool-disclaimer{border-top:1px solid rgba(152,213,205,.13);padding-top:15px;margin-top:19px}
+.cx-tool-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0}
+.cx-tool-actions button,.cx-tool-actions a,.cx-stay-actions a,.cx-stay-actions button,.cx-taxi-row a,.cx-friends-ui button{border:1px solid rgba(139,228,189,.4);background:rgba(82,174,143,.13);border-radius:10px;color:#b7ffdc;padding:10px 13px;text-decoration:none;cursor:pointer;font-size:.81rem;font-weight:650;transition:background .15s ease}
+.cx-tool-actions button:hover,.cx-tool-actions a:hover,.cx-stay-actions button:hover,.cx-stay-actions a:hover,.cx-taxi-row a:hover,.cx-friends-ui button:hover{background:rgba(115,213,172,.23)}
+.cx-tool-actions button:disabled,.cx-friends-ui button:disabled{opacity:.45;cursor:not-allowed}
+.cx-tool-error{background:rgba(174,49,53,.15);border:1px solid rgba(248,126,126,.42);border-radius:10px;color:#ffd1cd;padding:11px 12px;font-size:.8rem}
+.cx-tool-highlight{background:rgba(83,181,134,.13);border:1px solid rgba(157,222,165,.3);padding:12px;border-radius:10px;color:#beffe0;font-size:.84rem;line-height:1.5}
+.cx-stay-results{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow:auto}
+.cx-stay{border:1px solid rgba(188,242,230,.12);background:rgba(4,17,25,.32);border-radius:13px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.cx-stay strong,.cx-taxi-row strong,.cx-friend-row strong{font-size:.9rem;line-height:1.4}
+.cx-stay small,.cx-taxi-row small,.cx-friend-row small{display:block;color:#98b7b5;font-size:.75rem;margin-top:5px;line-height:1.45}
+.cx-stay-actions{display:flex;flex-wrap:wrap;gap:8px}
+.cx-taxi-itinerary{border:1px solid rgba(143,215,202,.22);padding:13px;border-radius:12px;background:rgba(3,18,26,.4)}
+.cx-taxi-itinerary p{margin:0 0 7px;overflow-wrap:anywhere;font-size:.79rem;line-height:1.5;color:#d0e9e6}
+.cx-taxi-itinerary b{display:inline-block;width:48px;color:#79d8b4}
+.cx-taxi-itinerary span{font-size:.76rem;color:#b5e2d3}
+.cx-taxi-apps{display:flex;flex-direction:column;gap:10px}
+.cx-taxi-row{display:grid;grid-template-columns:minmax(100px,1fr) 116px auto;gap:12px;align-items:center;border:1px solid rgba(168,218,210,.13);border-radius:12px;padding:12px}
+.cx-taxi-row label{font-size:.71rem;color:#bbd1cb}
+.cx-taxi-row input{width:100%;margin-top:5px;padding:8px}
+.cx-taxi-row a{text-align:center;white-space:nowrap}
+.cx-friends-card{margin-top:6px}
+.cx-friends-ui{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.cx-friends-controls,.cx-friends-sharing{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.cx-friends-controls>label,.cx-friends-ui label:not(.cx-friends-consent){display:flex;width:100%;gap:8px;flex-direction:column}
+.cx-friends-controls input:not([type="checkbox"]){width:100%}
+.cx-friends-controls .cx-tool-actions{margin:0}
+.cx-friends-sharing h4,.cx-friends-list h4{margin:0;font-size:.95rem;color:#e6fff2}
+.cx-friends-consent{display:flex;gap:9px;align-items:flex-start;line-height:1.55;color:#c6e6d8;font-size:.81rem}
+.cx-friends-consent input{margin:4px 0 0;flex:none;accent-color:#79d4b2}
+.cx-friends-invite{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid rgba(183,238,200,.3);padding:10px;border-radius:10px}
+.cx-friends-invite small{color:#b2d1bd;display:block;width:100%}
+.cx-friends-invite code{color:#e7ffe6;font-size:.8rem;overflow-wrap:anywhere}
+.cx-friends-list{grid-column:1/-1;border-top:1px solid rgba(164,217,207,.15);padding-top:18px}
+.cx-friend-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px;border-bottom:1px solid rgba(164,217,207,.13)}
+.cx-friend-row button{flex:none;color:#f7b7a9;border-color:rgba(255,176,164,.28)}
+@media(max-width:850px){.cx-travel-grid,.cx-friends-ui{grid-template-columns:1fr}.cx-tool-card{padding:18px}.cx-taxi-row{grid-template-columns:1fr 110px}.cx-taxi-row>a{grid-column:1/-1}.cx-friends-list{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.cx-tool-actions button,.cx-tool-actions a{transition:none}}
